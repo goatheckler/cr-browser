@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+body { @apply bg-background text-textPrimary; }
+
+button, .btn-primary { @apply bg-primary hover:bg-primaryAccent text-textPrimary transition-colors rounded focus:outline-none focus:ring-2 focus:ring-focusRing focus:ring-offset-2 focus:ring-offset-background; }
+input { @apply bg-surface text-sm text-textPrimary placeholder-textSecondary border border-border focus:border-primary focus:ring-1 focus:ring-focusRing rounded focus:outline-none; }
+.table-heading { @apply bg-surfaceAlt; }
+.table-row { @apply hover:bg-tableRowHover; }
+.copy-btn { @apply bg-surfaceAlt hover:bg-surface text-textPrimary border border-border px-2 py-[5px] rounded font-mono text-xs flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-focusRing focus:ring-offset-2 focus:ring-offset-background; }
+.fullref-cell { @apply h-full flex items-center; }
+.status-line { @apply text-textSecondary text-xs; }
+[role="status"] { @apply sr-only; }
+
+/* AG Grid dark theme customization (alpine base) */
+.ag-theme-alpine.ag-theme-alpine-dark {
+  --ag-background-color: #1e1e23;
+  --ag-odd-row-background-color: #24242a;
+  --ag-header-background-color: #27272f;
+  --ag-header-foreground-color: #f5f7fa;
+  --ag-foreground-color: #e2e8f0;
+  --ag-border-color: #3a3a44;
+  --ag-secondary-border-color: #2e2e36;
+  --ag-row-hover-color: #30303a;
+  --ag-selected-row-background-color: #2d3a4d;
+  --ag-font-size: 13px;
+  --ag-font-family: system-ui, sans-serif;
+  --ag-input-focus-border-color: #6366f1;
+  --ag-range-selection-border-color: #6366f1;
+  --ag-checkbox-unchecked-color: #9ca3af;
+  --ag-checkbox-checked-color: #6366f1;
+}
+.ag-theme-alpine.ag-theme-alpine-dark .ag-root-wrapper,
+.ag-theme-alpine.ag-theme-alpine-dark .ag-header,
+.ag-theme-alpine.ag-theme-alpine-dark .ag-row {
+  transition: background-color .15s ease, color .15s ease;
+}
+
