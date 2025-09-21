@@ -416,3 +416,12 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# --- Frontend (SvelteKit) ---
+frontend/.svelte-kit/
+frontend/build/
+frontend/node_modules/
+# Playwright traces/screenshots (default output dir can be test-results or playwright-report)
+playwright-report/
+frontend/playwright-report/
+frontend/test-results/
