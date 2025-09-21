@@ -1,0 +1,27 @@
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: ghcr-browser-backend:latest
+    container_name: ghcr-browser-backend
+    ports:
+      - "5214:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: ghcr-browser-frontend:latest
+    container_name: ghcr-browser-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "5173:80"
