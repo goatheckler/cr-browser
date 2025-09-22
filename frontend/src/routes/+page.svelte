@@ -21,6 +21,7 @@
   let rowData: Row[] = [];
   let gridApi: GridApi | null = null;
   let gridDiv: HTMLDivElement | null = null;
+  let pageContainer: HTMLDivElement | null = null;
   let gridCreated = false;
   let gridHeightPx = 400;
 
@@ -104,7 +105,13 @@
   function computeGridHeight() {
     if (!gridDiv) return;
     const rect = gridDiv.getBoundingClientRect();
-    const bottomPadding = 16; // match page padding
+    // Derive bottom padding from the page container's computed style (fallback 24px for p-6)
+    let bottomPadding = 24;
+    if (pageContainer) {
+      const style = getComputedStyle(pageContainer);
+      const parsed = parseFloat(style.paddingBottom || '0');
+      if (!Number.isNaN(parsed) && parsed >= 0) bottomPadding = parsed;
+    }
     const available = window.innerHeight - rect.top - bottomPadding;
     if (available > 150) gridHeightPx = available;
   }
@@ -153,7 +160,7 @@
   }
 </script>
 
-<div class="min-h-screen bg-background text-white p-6 space-y-6">
+<div class="min-h-screen bg-background text-white p-6 space-y-6" bind:this={pageContainer}>
   <div class="flex items-start justify-between gap-4 flex-wrap w-full">
     <h1 class="text-2xl font-bold">GHCR Tag Browser</h1>
     <div class="text-sm text-right">
