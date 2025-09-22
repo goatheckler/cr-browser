@@ -15,4 +15,3 @@ COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 # Copy SvelteKit static output (adapter-static emits into build/ by default)
 COPY --from=build /app/build /usr/share/nginx/html
 EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD wget -qO- http://localhost/ || exit 1
