@@ -1,0 +1,55 @@
+services:
+  backend:
+    image: thefnordling/ghcr-browser-backend:1.0.0
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080/api/health']
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        order: stop-first
+    networks:
+      - internal
+
+  frontend:
+    image: thefnordling/ghcr-browser-frontend:1.0.0
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      update_config:
+        parallelism: 1
+        delay: 5s
+        order: start-first
+    networks:
+      - internal
+    # nginx inside this image proxies /api/* -> backend:8080
+
+  # Optional future ingress via Cloudflare Tunnel
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   command: tunnel run --token 
+  #   networks:
+  #     - internal
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: any
+
+networks:
+  internal:
+    driver: overlay
+    attachable: true
