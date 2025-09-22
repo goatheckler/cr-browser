@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    image: ghcr-browser-backend:latest
+    image: thefnordling/ghcr-browser-backend:latest
     container_name: ghcr-browser-backend
     ports:
       - "5214:8080"
@@ -18,7 +18,7 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    image: ghcr-browser-frontend:latest
+    image: thefnordling/ghcr-browser-frontend:latest
     container_name: ghcr-browser-frontend
     depends_on:
       backend:
