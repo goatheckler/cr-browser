@@ -109,6 +109,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+      
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
