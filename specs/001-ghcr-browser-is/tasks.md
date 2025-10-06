@@ -1,30 +1,40 @@
 # Tasks: GHCR Image Tag Browser (MVP)
 
-Scope: Minimal tag listing only. Excludes metadata enrichment, pagination, truncation, digest formatting, rate‑limit distinction, retries, caching.
+Scope: Minimal tag listing only. Excludes metadata enrichment, pagination, truncation, input normalization, digest formatting, rate‑limit distinction, retries, caching.
 
 ## Conventions
 `[ID] Description (Mapped FRs)`
 
-## Task List
-- [ ] T01 Align OpenAPI to MVP (DONE in repo – verify) (FR-001..FR-005, FR-012)
-- [ ] T02 Prune deprecated code & tests (formatters, enrichment, unused manifest logic references) (FR-001..FR-012)
-- [ ] T03 Adjust or remove tests referencing removed features (digest, size, age) (FR-001..FR-012)
-- [ ] T04 Ensure validation covers trimming, prefix removal, lowercase normalization (FR-004, FR-006, FR-007)
-- [ ] T05 Implement / refine tags endpoint returning `{ tags: [] }` only (FR-001..FR-003, FR-005, FR-012)
-- [ ] T06 Implement simple not-found vs invalid format error responses (FR-004, FR-012)
-- [ ] T07 Frontend: minimal page (input + button + list + loading + errors + empty) (FR-001..FR-012)
-- [ ] T08 Frontend: copy-to-clipboard per tag with 1s confirmation (FR-011)
-- [ ] T09 Frontend: Enter key triggers lookup (FR-008)
-- [ ] T10 Dark theme + purple accent styling basics (FR-009)
-- [ ] T11 Update quickstart & README to reflect MVP + deferred list (docs)
-- [ ] T12 Run end-to-end manual quickstart validation & record notes
+## Implementation Tasks
+- [x] T01 Align OpenAPI to MVP (FR-001..FR-009)
+- [x] T02 Implement tags endpoint returning `{ tags: [] }` (FR-001, FR-002)
+- [x] T03 Implement error responses: InvalidFormat, NotFound, TransientUpstream (FR-003, FR-009)
+- [x] T04 Frontend: input form + search button (FR-001, FR-005)
+- [x] T05 Frontend: tag grid display with ag-grid (FR-002)
+- [x] T06 Frontend: copy-to-clipboard with confirmation (FR-008)
+- [x] T07 Frontend: Enter key triggers search (FR-005)
+- [x] T08 Frontend: loading indicator (FR-007)
+- [x] T09 Frontend: error display (FR-003, FR-009)
+- [x] T10 Frontend: empty state display (FR-004)
+- [x] T11 Frontend: dark theme + purple accents (FR-006)
+
+## Testing Tasks
+- [x] T12 Backend: Add validation unit tests (6 tests)
+- [x] T13 Backend: Add integration tests (3 tests)
+- [x] T14 Backend: Add contract tests (4 tests)
+- [x] T15 Frontend: Add E2E tests (7 tests)
+- [ ] T16 Update CI/CD: Create test.yml workflow
+- [ ] T17 Update CI/CD: Create build.yml workflow
+- [ ] T18 Update CI/CD: Create deploy.yml workflow
 
 ## Validation Checklist
-- [ ] Only two error codes exposed: InvalidFormat, NotFound
-- [ ] No pagination or metadata fields in any response
-- [ ] Copy action works for at least one real public image
-- [ ] Dark theme applied; accessible focus visible
-- [ ] README and quickstart free of enrichment/pagination wording
+- [x] Three error codes exposed: InvalidFormat, NotFound, TransientUpstream
+- [x] No pagination or metadata fields in response
+- [x] Copy action works for real public images
+- [x] Dark theme with purple accents applied
+- [x] Complete test coverage for all acceptance scenarios (20 tests total)
+- [x] Manual validation complete via Playwright MCP
+- [ ] CI/CD workflows functional
 
 ## Deferred (Tracked in spec Future Enhancements)
-Enrichment, pagination, truncation notice, highlight tag, digest, retry/backoff, caching, rate limit distinction, advanced a11y, performance metrics, token redaction.
+Input normalization (whitespace, prefix, case), enrichment, pagination, truncation notice, highlight tag, digest, retry/backoff, caching, rate limit distinction, advanced a11y, performance metrics, token support.

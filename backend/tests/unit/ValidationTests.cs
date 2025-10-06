@@ -17,6 +17,8 @@ public class ValidationTests
     [Theory]
     [InlineData("bad owner", "img")] // space invalid (owner fails)
     [InlineData("UPPER", "img")] // uppercase invalid
+    [InlineData("validowner", "invalid@image")] // special char in image
+    [InlineData("thisonwernameiswaytoolongandexceedsmaximumlimit", "repo")] // owner too long (40+ chars)
     public void Invalid_References_Should_Fail(string owner, string image)
     {
         var svc = new ValidationService();
