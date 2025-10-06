@@ -17,7 +17,6 @@
   "platformAutomerge": false,
   "ignoreTests": false,
   "dependencyDashboard": true,
-  "dependencyDashboardApproval": true,
   "packageRules": [
     {
       "description": "Auto-merge non-major updates that pass tests",
