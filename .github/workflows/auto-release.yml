@@ -15,7 +15,7 @@ jobs:
     runs-on: self-hosted
     if: github.event.head_commit.author.username == 'renovate[bot]'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.RENOVATE_TOKEN }}
