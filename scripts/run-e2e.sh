@@ -15,14 +15,11 @@ cleanup() {
   echo "[cleanup] Stopping background processes" >&2
   [[ -n "${BACKEND_PID:-}" ]] && kill $BACKEND_PID 2>/dev/null || true
   [[ -n "${FRONTEND_PID:-}" ]] && kill $FRONTEND_PID 2>/dev/null || true
-  # Also kill any processes still on these ports
-  lsof -ti :5214 2>/dev/null | xargs -r kill 2>/dev/null || true
-  lsof -ti :5173 2>/dev/null | xargs -r kill 2>/dev/null || true
 }
 trap cleanup EXIT
 
 echo "[backend] Starting API" >&2
-dotnet run --project "$BACKEND_PROJ" >/dev/null 2>&1 &
+dotnet run --project "$BACKEND_PROJ" &
 BACKEND_PID=$!
 
 # Wait for health endpoint
@@ -39,13 +36,13 @@ for i in {1..30}; do
 done
 
 echo "[frontend] Installing deps (if needed)" >&2
-(cd "$FRONTEND_DIR" && npm install >/dev/null 2>&1)
+(cd "$FRONTEND_DIR" && npm install)
 
 # Ensure playwright browser is installed
-(cd "$FRONTEND_DIR" && npx playwright install --with-deps chromium >/dev/null 2>&1 || true)
+(cd "$FRONTEND_DIR" && npx playwright install --with-deps chromium || true)
 
 echo "[frontend] Starting dev server" >&2
-(cd "$FRONTEND_DIR" && npm run dev >/dev/null 2>&1 &)
+(cd "$FRONTEND_DIR" && npm run dev &)
 FRONTEND_PID=$!
 
 for i in {1..30}; do
