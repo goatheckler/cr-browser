@@ -137,6 +137,9 @@ jobs:
       - name: Run E2E tests
         run: ../scripts/run-e2e.sh
         env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+          DOTNET_ROOT: ${{ runner.temp }}/dotnet
+          NODE_INSTALL_DIR: ${{ runner.temp }}/node
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/playwright-browsers
       
       - name: Upload test results
