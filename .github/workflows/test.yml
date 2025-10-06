@@ -134,21 +134,8 @@ jobs:
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/playwright-browsers
       
-      - name: Start services with docker-compose
-        run: |
-          cd ..
-          docker compose up -d
-        
-      - name: Wait for backend health check
-        run: |
-          timeout 60 bash -c 'until curl -f http://localhost:5214/api/health; do sleep 2; done'
-      
-      - name: Wait for frontend to be ready
-        run: |
-          timeout 60 bash -c 'until curl -f http://localhost:5173; do sleep 2; done'
-      
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: ../scripts/run-e2e.sh
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/playwright-browsers
       
@@ -161,9 +148,3 @@ jobs:
             frontend/test-results/
             frontend/playwright-report/
           retention-days: 7
-      
-      - name: Stop services
-        if: always()
-        run: |
-          cd ..
-          docker compose down
