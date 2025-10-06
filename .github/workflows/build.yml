@@ -5,34 +5,9 @@ on:
     types: [created]
 
 jobs:
-  detect-changes:
-    name: Detect Changes
-    runs-on: self-hosted
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'backend/**'
-              - 'docker-compose.yml'
-              - '.github/workflows/build.yml'
-            frontend:
-              - 'frontend/**'
-              - 'docker-compose.yml'
-              - '.github/workflows/build.yml'
-
   build-images:
     name: Build and Push Images
-    needs: detect-changes
-    if: |
-      github.event.release.target_commitish == 'main' &&
-      (needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.frontend == 'true')
+    if: github.event.release.target_commitish == 'main'
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
