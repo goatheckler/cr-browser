@@ -137,7 +137,7 @@ jobs:
       - name: Start services with docker-compose
         run: |
           cd ..
-          docker-compose up -d
+          docker compose up -d
         
       - name: Wait for backend health check
         run: |
@@ -166,4 +166,4 @@ jobs:
         if: always()
         run: |
           cd ..
-          docker-compose down
+          docker compose down
