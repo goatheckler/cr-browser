@@ -68,4 +68,4 @@ jobs:
         env:
           VERSION: ${{ github.event.release.tag_name }}
         run: |
-          docker stack deploy -c deploy/docker-compose.yml ghcr-browser
+          docker stack deploy --with-registry-auth --prune -c deploy/docker-compose.yml ghcr-browser
