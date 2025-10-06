@@ -13,7 +13,6 @@ jobs:
   release-please:
     name: Create Release
     runs-on: self-hosted
-    if: "!startsWith(github.event.head_commit.message, 'chore(main): release')"
     steps:
       - uses: actions/checkout@v4
       
