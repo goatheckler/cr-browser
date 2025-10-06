@@ -6,7 +6,8 @@ export default defineConfig({
   retries: 0,
   use: {
     baseURL: 'http://localhost:5173',
-    trace: 'on-first-retry'
+    trace: 'on-first-retry',
+    permissions: ['clipboard-read', 'clipboard-write']
   },
   projects: [
     {

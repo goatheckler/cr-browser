@@ -1,0 +1,160 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: self-hosted
+    permissions:
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'docker-compose.yml'
+              - '.github/workflows/test.yml'
+            frontend:
+              - 'frontend/**'
+              - 'docker-compose.yml'
+              - '.github/workflows/test.yml'
+
+  # Backend tests run on self-hosted runners with persistent disk storage.
+  # NuGet packages are cached locally at ~/.nuget/packages and persist between runs,
+  # so no GitHub Actions cache is needed. dotnet restore will use the local cache automatically.
+  test-backend:
+    name: Backend Tests
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+      
+      - name: Restore dependencies
+        run: dotnet restore GhcrBrowser.sln
+      
+      - name: Run unit tests
+        run: dotnet test backend/tests/unit --no-restore --verbosity normal
+      
+      - name: Run integration tests
+        run: dotnet test backend/tests/integration --no-restore --verbosity normal
+      
+      - name: Run contract tests
+        run: dotnet test backend/tests/contract --no-restore --verbosity normal
+
+  # Frontend tests run on self-hosted runners with persistent disk storage.
+  # npm packages are cached locally at ~/.npm and persist between runs.
+  # npm ci deletes node_modules but preserves ~/.npm cache, so downloads are avoided on subsequent runs.
+  test-frontend:
+    name: Frontend Tests
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: self-hosted
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+        env:
+          NODE_INSTALL_DIR: ${{ runner.temp }}/node
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build frontend
+        run: npm run build
+      
+      - name: Run type checking
+        run: npx svelte-check --tsconfig ./tsconfig.json
+
+  # E2E tests run on self-hosted runners with persistent disk storage.
+  # npm packages cached at ~/.npm persist between runs (npm ci preserves this cache).
+  # Playwright browsers are cached separately and managed by the cache action below.
+  test-e2e:
+    name: E2E Tests
+    needs: [detect-changes, test-backend, test-frontend]
+    if: |
+      always() &&
+      (needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.frontend == 'true') &&
+      (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped') &&
+      (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped')
+    runs-on: self-hosted
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+      
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+        env:
+          NODE_INSTALL_DIR: ${{ runner.temp }}/node
+      
+      - name: Install frontend dependencies
+        run: npm ci
+      
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ${{ runner.temp }}/playwright-browsers
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/playwright-browsers
+      
+      - name: Run E2E tests
+        run: ../scripts/run-e2e.sh
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+          DOTNET_ROOT: ${{ runner.temp }}/dotnet
+          NODE_INSTALL_DIR: ${{ runner.temp }}/node
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/playwright-browsers
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: |
+            frontend/test-results/
+            frontend/playwright-report/
+          retention-days: 7
