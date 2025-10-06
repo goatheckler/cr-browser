@@ -6,9 +6,6 @@
   "semanticCommits": "enabled",
   "semanticCommitType": "fix",
   "semanticCommitScope": "deps",
-  "schedule": [
-    "after 2am and before 6am"
-  ],
   "timezone": "UTC",
   "rangeStrategy": "bump",
   "separateMinorPatch": true,
