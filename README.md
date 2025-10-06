@@ -164,7 +164,10 @@ flowchart TD
 3. **Release Please** (`.github/workflows/release-please.yml`)
    - Triggers on push to main
    - Analyzes conventional commits since last release
-   - Creates GitHub release and git tag directly (no PR)
+   - Creates release PR with version bump and changelog
+   - Auto-merges PR (requires **Settings → General → Pull Requests → Allow auto-merge** enabled)
+   - Auto-merge waits for all required checks to pass before merging
+   - Creates GitHub release and git tag when PR merges
    - Auto-increments version (starting from v1.0.0)
    - Closes failed Renovate PRs when new updates merge
 
