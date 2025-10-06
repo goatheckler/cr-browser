@@ -123,7 +123,7 @@ jobs:
         uses: actions/cache@v4
         id: playwright-cache
         with:
-          path: ~/.cache/ms-playwright
+          path: ${{ runner.temp }}/playwright-browsers
           key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-playwright-
@@ -131,13 +131,8 @@ jobs:
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium
-      
-      - name: Verify system dependencies
-        run: |
-          # Check if chromium dependencies are available, warn if missing
-          if ! npx playwright install-deps chromium --dry-run 2>/dev/null; then
-            echo "::warning::Some Playwright system dependencies may be missing. Tests may fail."
-          fi
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/playwright-browsers
       
       - name: Start services with docker-compose
         run: |
@@ -154,6 +149,8 @@ jobs:
       
       - name: Run E2E tests
         run: npm run test:e2e
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/playwright-browsers
       
       - name: Upload test results
         uses: actions/upload-artifact@v4
