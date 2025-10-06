@@ -106,6 +106,100 @@ Local dev (hot reload) still uses:
 
 The production frontend image uses `@sveltejs/adapter-static` and nginx. To change proxy behavior edit `frontend/nginx.conf`. No Node runtime needed in production for the UI.
 
+## CI/CD Pipeline
+
+This project uses automated dependency management and continuous deployment:
+
+```mermaid
+flowchart TD
+    A[Code Change] --> B{Source?}
+    B -->|Developer| C[Create PR]
+    B -->|Renovate Bot| D[Dependency Update]
+    
+    D --> E[Renovate Creates PR]
+    E --> F[Test Workflow Runs]
+    
+    C --> F
+    
+    F --> G{Tests Pass?}
+    G -->|No| H[Manual Fix Required]
+    G -->|Yes & Minor/Patch| I[Auto-merge to main]
+    G -->|Yes & Major| J[Manual Review & Merge]
+    
+    J --> K[Push to main]
+    I --> K
+    
+    K --> L[release-please Workflow]
+    L --> M[Create GitHub Release]
+    L --> N[Close Failed Renovate PRs]
+    
+    M --> O[Build Workflow Triggers]
+    O --> P[Build Backend Image]
+    O --> Q[Build Frontend Image]
+    
+    P --> R[Push to Docker Hub]
+    Q --> R
+    
+    R --> S{Prerelease?}
+    S -->|Yes| T[Stop - Manual Deploy]
+    S -->|No| U[Auto-deploy to Production]
+    
+    U --> V[Docker Swarm Stack Update]
+    
+    style A fill:#e1f5fe
+    style K fill:#c8e6c9
+    style M fill:#fff9c4
+    style U fill:#f8bbd0
+    style V fill:#b39ddb
+```
+
+### Workflows
+
+1. **Test** (`.github/workflows/test.yml`)
+   - Triggers on pull requests
+   - Runs backend, frontend, and e2e tests
+   - Required to pass before merge
+
+2. **Renovate** (`.github/workflows/renovate.yml`)
+   - Runs every 6 hours
+   - Scans for dependency updates (npm, NuGet, Docker base images)
+   - Creates PRs with conventional commits
+   - Auto-merges minor/patch updates after tests pass
+   - Logs activity to `RENOVATE.md`
+
+3. **Release Please** (`.github/workflows/release-please.yml`)
+   - Triggers on push to main
+   - Auto-increments version based on conventional commits
+   - Creates GitHub releases (starting from v1.0.0)
+   - Closes failed Renovate PRs when new updates merge
+
+4. **Build** (`.github/workflows/build.yml`)
+   - Triggers on GitHub release creation
+   - Builds and pushes Docker images to Docker Hub
+   - Tags: `latest`, `<release-tag>`, `sha-<commit>`
+   - Auto-deploys to production (non-prerelease only)
+
+### Version Management
+
+- **Conventional Commits** determine version bumps:
+  - `fix:` → patch (1.0.0 → 1.0.1)
+  - `feat:` → minor (1.0.0 → 1.1.0)
+  - `feat!:` or `BREAKING CHANGE:` → major (1.0.0 → 2.0.0)
+
+- **Renovate PRs** use `fix(deps):` prefix → patch bumps
+
+### Deployment
+
+Production deployment uses Docker Swarm:
+- Stack config: `deploy/docker-compose.yml`
+- Network: `ghcr-browser-net` (external overlay)
+- Images pulled from Docker Hub with registry auth
+
+Manual deployment:
+```bash
+VERSION=v1.0.1 docker stack deploy --with-registry-auth -c deploy/docker-compose.yml ghcr-browser
+```
+
 ## Contributing
 Keep commits small and focused. For MVP, avoid reintroducing deferred features until explicitly scheduled.
 
