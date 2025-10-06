@@ -7,7 +7,6 @@ on:
 jobs:
   build-images:
     name: Build and Push Images
-    if: github.event.release.target_commitish == 'main'
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
