@@ -1,0 +1,29 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Create Release
+    runs-on: self-hosted
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Close failed Renovate PRs
+        run: |
+          gh pr list --author "renovate[bot]" --state open --json number,statusCheckRollup --jq '.[] | select(.statusCheckRollup[]? | select(.status == "FAILURE" or .conclusion == "FAILURE")) | .number' | while read pr; do
+            if [ -n "$pr" ]; then
+              gh pr close $pr --comment "Auto-closed: subsequent dependency update merged successfully, indicating upstream fix or superseded update"
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

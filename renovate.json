@@ -1,0 +1,49 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "semanticCommits": "enabled",
+  "semanticCommitType": "fix",
+  "semanticCommitScope": "deps",
+  "schedule": [
+    "after 2am and before 6am"
+  ],
+  "timezone": "UTC",
+  "rangeStrategy": "bump",
+  "separateMinorPatch": true,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 0,
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "platformAutomerge": false,
+  "ignoreTests": false,
+  "packageRules": [
+    {
+      "description": "Auto-merge non-major updates that pass tests",
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "automerge": true
+    },
+    {
+      "description": "Require manual review for major updates",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "Group all npm packages together",
+      "matchManagers": ["npm"],
+      "groupName": "npm dependencies"
+    },
+    {
+      "description": "Group all NuGet packages together",
+      "matchManagers": ["nuget"],
+      "groupName": "nuget dependencies"
+    },
+    {
+      "description": "Group Docker base images",
+      "matchDatasources": ["docker"],
+      "groupName": "docker base images"
+    }
+  ]
+}
