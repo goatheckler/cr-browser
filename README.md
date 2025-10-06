@@ -130,9 +130,9 @@ flowchart TD
     I --> K
     
     K --> L[release-please Workflow]
-    L --> M[Create GitHub Release]
-    L --> N[Close Failed Renovate PRs]
+    L --> M[Create GitHub Release & Tag]
     
+    M --> N[Close Failed Renovate PRs]
     M --> O[Build Workflow Triggers]
     O --> P[Build Backend Image]
     O --> Q[Build Frontend Image]
@@ -169,8 +169,9 @@ flowchart TD
 
 3. **Release Please** (`.github/workflows/release-please.yml`)
    - Triggers on push to main
-   - Auto-increments version based on conventional commits
-   - Creates GitHub releases (starting from v1.0.0)
+   - Analyzes conventional commits since last release
+   - Creates GitHub release and git tag directly (no PR)
+   - Auto-increments version (starting from v1.0.0)
    - Closes failed Renovate PRs when new updates merge
 
 4. **Build** (`.github/workflows/build.yml`)
