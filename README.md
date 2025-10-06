@@ -173,6 +173,7 @@ flowchart TD
    - Creates GitHub release and git tag when PR merges
    - Auto-increments version (starting from v1.0.0)
    - Closes failed Renovate PRs when new updates merge
+   - **Note**: Each PR merge triggers a separate release cycle. To group multiple changes in one release, combine them in a single PR
 
 4. **Build** (`.github/workflows/build.yml`)
    - Triggers on GitHub release creation
