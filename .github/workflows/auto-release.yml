@@ -45,11 +45,13 @@ jobs:
           git tag -a "$new_version" -m "Release $new_version"
           git push origin "$new_version"
           
+          release_notes="**Automated dependency update release**
+
+${commit_message}"
+          
           gh release create "$new_version" \
             --title "$new_version" \
-            --notes "**Automated dependency update release**
-          
-          $commit_message"
+            --notes "$release_notes"
         env:
           GH_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
       
