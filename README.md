@@ -130,21 +130,23 @@ flowchart TD
     I --> K
     
     K --> L[release-please Workflow]
-    L --> M[Create GitHub Release & Tag]
+    L --> M[Create/Update Release PR]
+    M --> N[PR Auto-merges]
+    N --> O[Create GitHub Release & Tag]
     
-    M --> N[Close Failed Renovate PRs]
-    M --> O[Build Workflow Triggers]
-    O --> P[Build Backend Image]
-    O --> Q[Build Frontend Image]
+    O --> P[Close Failed Renovate PRs]
+    O --> Q[Build Workflow Triggers]
+    Q --> R[Build Backend Image]
+    Q --> S[Build Frontend Image]
     
-    P --> R[Push to Docker Hub]
-    Q --> R
+    R --> T[Push to Docker Hub]
+    S --> T
     
-    R --> S{Prerelease?}
-    S -->|Yes| T[Stop - Manual Deploy]
-    S -->|No| U[Auto-deploy to Production]
+    T --> U{Prerelease?}
+    U -->|Yes| V[Stop - Manual Deploy]
+    U -->|No| W[Auto-deploy to Production]
     
-    U --> V[Docker Swarm Stack Update]
+    W --> X[Docker Swarm Stack Update]
 ```
 
 ### Workflows
@@ -165,6 +167,7 @@ flowchart TD
    - Triggers on push to main
    - Analyzes conventional commits since last release
    - Creates release PR with version bump and changelog
+   - **Requires PAT**: Uses `RENOVATE_TOKEN` instead of `GITHUB_TOKEN` because the default token prevents workflows from triggering on PR events created by Actions (to prevent infinite loops)
    - Auto-merges PR (requires **Settings → General → Pull Requests → Allow auto-merge** enabled)
    - Auto-merge waits for all required checks to pass before merging
    - Creates GitHub release and git tag when PR merges

@@ -20,7 +20,7 @@ jobs:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RENOVATE_TOKEN }}
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
       
@@ -29,7 +29,7 @@ jobs:
         run: |
           echo '${{ steps.release.outputs.pr }}' | jq -r '.number' | xargs -I {} gh pr merge {} --squash --auto
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
       
       - name: Close failed Renovate PRs
         if: ${{ steps.release.outputs.release_created }}
@@ -40,4 +40,4 @@ jobs:
             fi
           done
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
