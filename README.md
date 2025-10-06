@@ -112,39 +112,39 @@ This project uses automated dependency management and continuous deployment:
 
 ```mermaid
 flowchart TD
-    A["fa:fa-code Code Change"] --> B{Source?}
-    B -->|Developer| C["fa:fa-code-pull-request Create PR"]
-    B -->|Renovate Bot| D["fa:fa-robot Dependency Update"]
+    A[Code Change] --> B{Source?}
+    B -->|Developer| C[Create PR]
+    B -->|Renovate Bot| D[Dependency Update]
     
-    D --> E["fa:fa-code-pull-request Renovate Creates PR"]
-    E --> F["fa:fa-flask Test Workflow Runs"]
+    D --> E[Renovate Creates PR]
+    E --> F[Test Workflow Runs]
     
     C --> F
     
     F --> G{Tests Pass?}
-    G -->|No| H["fa:fa-wrench Manual Fix Required"]
-    G -->|Yes & Minor/Patch| I["fa:fa-code-merge Auto-merge to main"]
-    G -->|Yes & Major| J["fa:fa-eye Manual Review & Merge"]
+    G -->|No| H[Manual Fix Required]
+    G -->|Yes & Minor/Patch| I[Auto-merge to main]
+    G -->|Yes & Major| J[Manual Review & Merge]
     
-    J --> K["fa:fa-arrow-up Push to main"]
+    J --> K[Push to main]
     I --> K
     
-    K --> L["fa:fa-rocket release-please Workflow"]
-    L --> M["fa:fa-tag Create GitHub Release & Tag"]
+    K --> L[release-please Workflow]
+    L --> M[Create GitHub Release & Tag]
     
-    M --> N["fa:fa-times-circle Close Failed Renovate PRs"]
-    M --> O["fa:fa-cogs Build Workflow Triggers"]
-    O --> P["fa:fa-box Build Backend Image"]
-    O --> Q["fa:fa-box Build Frontend Image"]
+    M --> N[Close Failed Renovate PRs]
+    M --> O[Build Workflow Triggers]
+    O --> P[Build Backend Image]
+    O --> Q[Build Frontend Image]
     
-    P --> R["fa:fa-docker Push to Docker Hub"]
+    P --> R[Push to Docker Hub]
     Q --> R
     
     R --> S{Prerelease?}
-    S -->|Yes| T["fa:fa-hand-paper Stop - Manual Deploy"]
-    S -->|No| U["fa:fa-paper-plane Auto-deploy to Production"]
+    S -->|Yes| T[Stop - Manual Deploy]
+    S -->|No| U[Auto-deploy to Production]
     
-    U --> V["fa:fa-server Docker Swarm Stack Update"]
+    U --> V[Docker Swarm Stack Update]
 ```
 
 ### Workflows
