@@ -85,11 +85,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Run type checking
-        run: npx svelte-check --tsconfig ./tsconfig.json
-      
       - name: Build frontend
         run: npm run build
+      
+      - name: Run type checking
+        run: npx svelte-check --tsconfig ./tsconfig.json
 
   # E2E tests run on self-hosted runners with persistent disk storage.
   # npm packages cached at ~/.npm persist between runs (npm ci preserves this cache).
