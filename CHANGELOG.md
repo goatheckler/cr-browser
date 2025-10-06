@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.3](https://github.com/goatheckler/ghcr-browser/compare/v1.1.2...v1.1.3) (2025-10-06)
+
+
+### Bug Fixes
+
+* remove skip condition to allow release creation on release PR merge ([fe700c0](https://github.com/goatheckler/ghcr-browser/commit/fe700c00745c5cca7d83f46fdf759406a0a3bfb4))
+* remove skip condition to allow release creation on release PR merge ([381e6b6](https://github.com/goatheckler/ghcr-browser/commit/381e6b6b0310b7d4c80ad8a10ad4b821656ea30a))
+
 ## [1.1.2](https://github.com/goatheckler/ghcr-browser/compare/v1.1.1...v1.1.2) (2025-10-06)
 
 
