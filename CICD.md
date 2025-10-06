@@ -149,22 +149,27 @@ jobs:
 
 ## Container Versioning
 
-### Shared Versioning via GitHub Releases
-Both containers receive the same version tag from GitHub releases:
+### Automated Versioning via Renovate Merges
+Both containers receive the same version tag, auto-incremented on Renovate merges:
 - Backend and frontend always deployed together with matching versions
 - Simpler mental model and clearer release management
 - Single git tag/release triggers both container builds
-- Version is defined at release time, not in repository files
+- Version is automatically determined from latest tag
 
 **Release Process**:
-1. Create GitHub release with semantic version tag (e.g., `0.0.0.1-alpha-1`)
-2. Both containers automatically built and tagged with release version
-3. Images available as:
-   - `thefnordling/ghcr-browser-backend:0.0.0.1-alpha-1`
-   - `thefnordling/ghcr-browser-frontend:0.0.0.1-alpha-1`
+1. Renovate PR merges to main
+2. Auto-release workflow detects Renovate commit
+3. Latest tag fetched (e.g., `v1.2.3`) and patch incremented (→ `v1.2.4`)
+4. New tag and GitHub release created automatically
+5. Both containers automatically built and tagged with release version
+6. Images available as:
+   - `thefnordling/ghcr-browser-backend:1.2.4`
+   - `thefnordling/ghcr-browser-frontend:1.2.4`
    - Both also tagged as `:latest` and `:sha-<commit>`
 
-**Decision**: Use **shared versioning via releases** for synchronized deployments
+**Manual Releases**: Developers can create releases manually via GitHub UI for non-dependency updates
+
+**Decision**: Use **automated patch versioning for dependencies**, manual versioning for features
 
 ## Optimization Strategies
 

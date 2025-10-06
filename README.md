@@ -129,24 +129,29 @@ flowchart TD
     J --> K[Push to main]
     I --> K
     
-    K --> L[release-please Workflow]
-    L --> M[Create/Update Release PR]
-    M --> N[PR Auto-merges]
-    N --> O[Create GitHub Release & Tag]
+    K --> L{Renovate Commit?}
+    L -->|Yes| M[Auto-release Workflow]
+    L -->|No| N[Manual Release Option]
     
-    O --> P[Close Failed Renovate PRs]
-    O --> Q[Build Workflow Triggers]
-    Q --> R[Build Backend Image]
-    Q --> S[Build Frontend Image]
+    M --> O[Increment Patch Version]
+    O --> P[Create GitHub Release & Tag]
     
-    R --> T[Push to Docker Hub]
-    S --> T
+    P --> Q[Close Failed Renovate PRs]
+    P --> R[Build Workflow Triggers]
+    Q --> R[Build Workflow Triggers]
+    R --> S[Build Backend Image]
+    R --> T[Build Frontend Image]
     
-    T --> U{Prerelease?}
-    U -->|Yes| V[Stop - Manual Deploy]
-    U -->|No| W[Auto-deploy to Production]
+    S --> U[Push to Docker Hub]
+    T --> U
     
-    W --> X[Docker Swarm Stack Update]
+    T --> U[Push to Docker Hub]
+    
+    U --> V{Prerelease?}
+    V -->|Yes| W[Stop - Manual Deploy]
+    V -->|No| X[Auto-deploy to Production]
+    
+    X --> Y[Docker Swarm Stack Update]
 ```
 
 ### Workflows
@@ -163,17 +168,14 @@ flowchart TD
    - Auto-merges minor/patch updates after tests pass
    - Logs activity to `RENOVATE.md`
 
-3. **Release Please** (`.github/workflows/release-please.yml`)
-   - Triggers on push to main
-   - Analyzes conventional commits since last release
-   - Creates release PR with version bump and changelog
-   - **Requires PAT**: Uses `RENOVATE_TOKEN` instead of `GITHUB_TOKEN` because the default token prevents workflows from triggering on PR events created by Actions (to prevent infinite loops)
-   - Auto-merges PR (requires **Settings → General → Pull Requests → Allow auto-merge** enabled)
-   - Auto-merge waits for all required checks to pass before merging
-   - Creates GitHub release and git tag when PR merges
-   - Auto-increments version (starting from v1.0.0)
+3. **Auto Release** (`.github/workflows/auto-release.yml`)
+   - Triggers on push to main by `renovate[bot]`
+   - Fetches latest version tag (e.g., `v1.2.3`)
+   - Auto-increments patch version (→ `v1.2.4`)
+   - Creates GitHub release and git tag
+   - Uses `RENOVATE_TOKEN` (PAT) to trigger build workflow
    - Closes failed Renovate PRs when new updates merge
-   - **Note**: Each PR merge triggers a separate release cycle. To group multiple changes in one release, combine them in a single PR
+   - **Manual releases**: Developers can create releases via GitHub UI for feature work
 
 4. **Build** (`.github/workflows/build.yml`)
    - Triggers on GitHub release creation
@@ -183,12 +185,14 @@ flowchart TD
 
 ### Version Management
 
-- **Conventional Commits** determine version bumps:
-  - `fix:` → patch (1.0.0 → 1.0.1)
-  - `feat:` → minor (1.0.0 → 1.1.0)
-  - `feat!:` or `BREAKING CHANGE:` → major (1.0.0 → 2.0.0)
+- **Automated Versioning**: Renovate dependency merges auto-increment patch version
+  - v1.0.0 → v1.0.1 → v1.0.2 (automatic)
+  
+- **Manual Versioning**: Developers create releases via GitHub UI for feature work
+  - Can bump minor (v1.0.2 → v1.1.0) or major (v1.1.0 → v2.0.0) versions
+  - Manually created tags should follow `vX.Y.Z` format
 
-- **Renovate PRs** use `fix(deps):` prefix → patch bumps
+- **Renovate PRs** are dependency updates that trigger automatic patch releases
 
 ### Deployment
 
