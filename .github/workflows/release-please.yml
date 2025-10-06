@@ -13,6 +13,7 @@ jobs:
   release-please:
     name: Create Release
     runs-on: self-hosted
+    if: "!contains(github.event.head_commit.message, 'chore(main): release')"
     steps:
       - uses: actions/checkout@v4
       
@@ -22,7 +23,13 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
-          skip-github-pull-request: true
+      
+      - name: Auto-merge release PR
+        if: ${{ steps.release.outputs.pr }}
+        run: |
+          gh pr merge ${{ steps.release.outputs.pr }} --squash --auto
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Close failed Renovate PRs
         if: ${{ steps.release.outputs.release_created }}
