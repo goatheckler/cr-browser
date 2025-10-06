@@ -8,7 +8,7 @@
   "semanticCommitScope": "deps",
   "timezone": "UTC",
   "rangeStrategy": "bump",
-  "separateMinorPatch": true,
+  "separateMinorPatch": false,
   "prConcurrentLimit": 5,
   "prHourlyLimit": 0,
   "automerge": true,
@@ -20,27 +20,13 @@
     {
       "description": "Auto-merge non-major updates that pass tests",
       "matchUpdateTypes": ["minor", "patch", "digest"],
-      "automerge": true
+      "automerge": true,
+      "groupName": "all dependencies"
     },
     {
       "description": "Require manual review for major updates",
       "matchUpdateTypes": ["major"],
       "automerge": false
-    },
-    {
-      "description": "Group all npm packages together",
-      "matchManagers": ["npm"],
-      "groupName": "npm dependencies"
-    },
-    {
-      "description": "Group all NuGet packages together",
-      "matchManagers": ["nuget"],
-      "groupName": "nuget dependencies"
-    },
-    {
-      "description": "Group Docker base images",
-      "matchDatasources": ["docker"],
-      "groupName": "docker base images"
     }
   ]
 }
