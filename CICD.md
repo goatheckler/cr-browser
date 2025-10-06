@@ -1,7 +1,7 @@
 # CI/CD Strategy for ghcr-browser
 
 **Last Updated**: 2025-10-06  
-**Status**: Test Suite Complete - Ready for Workflow Implementation
+**Status**: Test and Build Workflows Complete - Ready for Deploy Workflow
 
 ## Overview
 
@@ -31,14 +31,14 @@ This document outlines the CI/CD strategy for the ghcr-browser monorepo, which c
 ## Workflow Strategy
 
 ### Multiple Workflows Approach
-We will implement **three separate workflows** rather than one monolithic workflow:
+We implement **three separate workflows** rather than one monolithic workflow:
 
-1. **`test.yml`** - Testing (runs on all PRs and pushes)
-2. **`build.yml`** - Build & Push Images (runs on main branch)
-3. **`deploy.yml`** - Deployment (manual trigger or tag-based)
+1. **`test.yml`** - Testing (runs on all PRs) ✅ Complete
+2. **`build.yml`** - Build & Push Images (runs on release creation) ✅ Complete
+3. **`deploy.yml`** - Deployment (manual trigger or tag-based) 🔄 To Do
 
 **Rationale**:
-- Different trigger conditions (test on every push, build only on main, deploy manually)
+- Different trigger conditions (test on PRs, build on releases, deploy manually)
 - Faster feedback loop (tests fail fast without building)
 - Clear separation of concerns and failure points
 - Different permission boundaries (test=none, build=registry write, deploy=production credentials)
@@ -46,9 +46,9 @@ We will implement **three separate workflows** rather than one monolithic workfl
 
 ## Workflow Details
 
-### 1. Test Workflow (`test.yml`)
+### 1. Test Workflow (`test.yml`) ✅ Complete
 
-**Trigger**: Every push, every pull request
+**Trigger**: Pull requests to `main` branch
 
 **Jobs**:
 ```yaml
@@ -65,12 +65,15 @@ jobs:
     - Checkout code
     - Setup Node 20
     - Install dependencies
-    - Run unit tests (when implemented)
-    - Run linting/type checking
+    - Build frontend
+    - Run type checking (svelte-check)
     
   test-e2e:
     needs: [test-backend, test-frontend]
     - Checkout code
+    - Setup .NET 8 and Node 20
+    - Install frontend dependencies
+    - Install Playwright browsers (cached)
     - Start services with docker-compose
     - Run Playwright E2E tests
     - Upload test results/screenshots on failure
@@ -83,50 +86,39 @@ jobs:
 
 **Success Criteria**: All jobs must pass for PR to be mergeable
 
-### 2. Build Workflow (`build.yml`)
+### 2. Build Workflow (`build.yml`) ✅ Complete
 
-**Trigger**: Push to `main` branch only
+**Trigger**: GitHub release creation (target must be `main` branch)
 
 **Jobs**:
 ```yaml
 jobs:
-  detect-changes:
-    - Determine which applications changed since last build
-    
-  build-backend:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true'
+  build-images:
+    if: github.event.release.target_commitish == 'main'
     - Checkout code
     - Setup Docker Buildx
     - Login to Docker Hub
-    - Build backend image
-    - Tag: thefnordling/ghcr-browser-backend:latest
-    - Tag: thefnordling/ghcr-browser-backend:sha-<commit-sha>
-    - Tag: thefnordling/ghcr-browser-backend:<version> (if tagged)
-    - Push all tags
-    
-  build-frontend:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.frontend == 'true'
-    - Checkout code
-    - Setup Docker Buildx
-    - Login to Docker Hub
-    - Build frontend image
-    - Tag: thefnordling/ghcr-browser-frontend:latest
-    - Tag: thefnordling/ghcr-browser-frontend:sha-<commit-sha>
-    - Tag: thefnordling/ghcr-browser-frontend:<version> (if tagged)
-    - Push all tags
+    - Extract metadata for backend
+    - Extract metadata for frontend
+    - Build and push backend image
+      - Tag: thefnordling/ghcr-browser-backend:latest
+      - Tag: thefnordling/ghcr-browser-backend:<release-tag>
+      - Tag: thefnordling/ghcr-browser-backend:sha-<commit-sha>
+    - Build and push frontend image
+      - Tag: thefnordling/ghcr-browser-frontend:latest
+      - Tag: thefnordling/ghcr-browser-frontend:<release-tag>
+      - Tag: thefnordling/ghcr-browser-frontend:sha-<commit-sha>
 ```
 
-**Selective Building**:
-- Only build containers for changed applications
-- Use `git diff` or GitHub's `paths` filter to detect changes
-- Skip builds when only docs/tests change
+**Image Building**:
+- Both backend and frontend images always built together on every release
+- Ensures synchronized versioning across services
+- No change detection needed since releases are manual
 
 **Image Tagging Strategy**:
-- `latest`: Always points to most recent main branch build
+- `latest`: Always points to most recent release
+- `<release-tag>`: Semantic version from GitHub release (e.g., `0.0.0.1-alpha-1`)
 - `sha-<commit-sha>`: Immutable reference to specific commit
-- `<version>`: Semantic version tag (e.g., `v1.2.3`) when git tagged
 
 ### 3. Deploy Workflow (`deploy.yml`)
 
@@ -157,19 +149,22 @@ jobs:
 
 ## Container Versioning
 
-### Independent Versioning
-Each container (backend/frontend) can have independent version numbers:
-- Allows deploying backend v1.2.3 with frontend v1.2.4
-- Supports independent deployment cadences
-- Tracked in separate files: `backend/VERSION` and `frontend/VERSION` (optional)
+### Shared Versioning via GitHub Releases
+Both containers receive the same version tag from GitHub releases:
+- Backend and frontend always deployed together with matching versions
+- Simpler mental model and clearer release management
+- Single git tag/release triggers both container builds
+- Version is defined at release time, not in repository files
 
-### Shared Versioning (Alternative)
-Single version for entire release:
-- Both containers get same version tag
-- Simpler mental model
-- Single git tag triggers both deployments
+**Release Process**:
+1. Create GitHub release with semantic version tag (e.g., `0.0.0.1-alpha-1`)
+2. Both containers automatically built and tagged with release version
+3. Images available as:
+   - `thefnordling/ghcr-browser-backend:0.0.0.1-alpha-1`
+   - `thefnordling/ghcr-browser-frontend:0.0.0.1-alpha-1`
+   - Both also tagged as `:latest` and `:sha-<commit>`
 
-**Decision**: Start with **independent versioning** for maximum flexibility
+**Decision**: Use **shared versioning via releases** for synchronized deployments
 
 ## Optimization Strategies
 
@@ -209,11 +204,12 @@ Single version for entire release:
 
 ## Branch Protection
 
-### Main Branch Rules
-- Require `test` workflow to pass before merge
-- Require 1 approval for PRs (if team grows)
-- No direct pushes to main
-- Require branches to be up to date before merge
+### Main Branch Rules ✅ Implemented
+- Require `test-backend`, `test-frontend`, `test-e2e` workflows to pass before merge
+- Require branches to be up to date before merge (ensures tests run against merged state)
+- Require pull requests (no direct pushes to main)
+- Require 1 approval for PRs (optional, if team grows)
+- Require linear history (prevents merge commits, use squash or rebase)
 
 ## Future Enhancements
 
@@ -239,13 +235,15 @@ Single version for entire release:
   - [x] Frontend E2E tests (health.spec.ts, tags.spec.ts, user-interactions.spec.ts)
   - [x] Manual validation via Playwright MCP
 - [x] Create `.github/workflows/test.yml`
-- [ ] Create `.github/workflows/build.yml`
+- [x] Create `.github/workflows/build.yml`
+- [x] Configure GitHub Secrets (DOCKERHUB_USERNAME, DOCKERHUB_TOKEN)
+- [x] Configure self-hosted runner with Docker access
+- [x] Set up branch protection rules
 - [ ] Create `.github/workflows/deploy.yml`
-- [ ] Configure GitHub Secrets (DOCKERHUB_USERNAME, DOCKERHUB_TOKEN)
-- [ ] Set up branch protection rules
+- [ ] Document release process
 - [ ] Document deployment process
-- [ ] Test full CI/CD pipeline on feature branch
-- [ ] Merge to main and validate
+- [ ] Test full CI/CD pipeline end-to-end
+- [ ] Validate production deployment
 
 ## References
 
