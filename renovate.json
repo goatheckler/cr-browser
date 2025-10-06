@@ -16,6 +16,8 @@
   "automergeStrategy": "squash",
   "platformAutomerge": false,
   "ignoreTests": false,
+  "dependencyDashboard": true,
+  "dependencyDashboardApproval": true,
   "packageRules": [
     {
       "description": "Auto-merge non-major updates that pass tests",
@@ -24,9 +26,11 @@
       "groupName": "all dependencies"
     },
     {
-      "description": "Require manual review for major updates",
+      "description": "Require manual approval for major updates via Dependency Dashboard",
       "matchUpdateTypes": ["major"],
-      "automerge": false
+      "dependencyDashboardApproval": true,
+      "automerge": false,
+      "groupName": "major dependencies"
     }
   ]
 }
