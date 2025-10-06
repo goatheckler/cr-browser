@@ -48,8 +48,8 @@ jobs:
           gh release create "$new_version" \
             --title "$new_version" \
             --notes "**Automated dependency update release**
-
-$commit_message"
+          
+          $commit_message"
         env:
           GH_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
       
