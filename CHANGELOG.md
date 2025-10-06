@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/goatheckler/ghcr-browser/compare/v1.1.0...v1.1.1) (2025-10-06)
+
+
+### Bug Fixes
+
+* use startsWith instead of contains to prevent skipping release P… ([1b94e3c](https://github.com/goatheckler/ghcr-browser/commit/1b94e3c7ce3e769fff45f1a985ca6c2bf030fa56))
+* use startsWith instead of contains to prevent skipping release PR merges ([65820cd](https://github.com/goatheckler/ghcr-browser/commit/65820cdb0770d671f8286cd3910464ff10fe877d))
+
 ## [1.1.0](https://github.com/goatheckler/ghcr-browser/compare/v1.0.0...v1.1.0) (2025-10-06)
 
 
