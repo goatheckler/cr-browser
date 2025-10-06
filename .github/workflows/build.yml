@@ -62,3 +62,10 @@ jobs:
           labels: ${{ steps.meta-frontend.outputs.labels }}
           cache-from: type=registry,ref=thefnordling/ghcr-browser-frontend:latest
           cache-to: type=inline
+      
+      - name: Deploy to production
+        if: github.event.release.prerelease == false
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+        run: |
+          docker stack deploy -c deploy/docker-compose.yml ghcr-browser
