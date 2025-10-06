@@ -112,45 +112,39 @@ This project uses automated dependency management and continuous deployment:
 
 ```mermaid
 flowchart TD
-    A[Code Change] --> B{Source?}
-    B -->|Developer| C[Create PR]
-    B -->|Renovate Bot| D[Dependency Update]
+    A["fa:fa-code Code Change"] --> B{Source?}
+    B -->|Developer| C["fa:fa-code-pull-request Create PR"]
+    B -->|Renovate Bot| D["fa:fa-robot Dependency Update"]
     
-    D --> E[Renovate Creates PR]
-    E --> F[Test Workflow Runs]
+    D --> E["fa:fa-code-pull-request Renovate Creates PR"]
+    E --> F["fa:fa-flask Test Workflow Runs"]
     
     C --> F
     
     F --> G{Tests Pass?}
-    G -->|No| H[Manual Fix Required]
-    G -->|Yes & Minor/Patch| I[Auto-merge to main]
-    G -->|Yes & Major| J[Manual Review & Merge]
+    G -->|No| H["fa:fa-wrench Manual Fix Required"]
+    G -->|Yes & Minor/Patch| I["fa:fa-code-merge Auto-merge to main"]
+    G -->|Yes & Major| J["fa:fa-eye Manual Review & Merge"]
     
-    J --> K[Push to main]
+    J --> K["fa:fa-arrow-up Push to main"]
     I --> K
     
-    K --> L[release-please Workflow]
-    L --> M[Create GitHub Release]
-    L --> N[Close Failed Renovate PRs]
+    K --> L["fa:fa-rocket release-please Workflow"]
+    L --> M["fa:fa-tag Create GitHub Release & Tag"]
     
-    M --> O[Build Workflow Triggers]
-    O --> P[Build Backend Image]
-    O --> Q[Build Frontend Image]
+    M --> N["fa:fa-times-circle Close Failed Renovate PRs"]
+    M --> O["fa:fa-cogs Build Workflow Triggers"]
+    O --> P["fa:fa-box Build Backend Image"]
+    O --> Q["fa:fa-box Build Frontend Image"]
     
-    P --> R[Push to Docker Hub]
+    P --> R["fa:fa-docker Push to Docker Hub"]
     Q --> R
     
     R --> S{Prerelease?}
-    S -->|Yes| T[Stop - Manual Deploy]
-    S -->|No| U[Auto-deploy to Production]
+    S -->|Yes| T["fa:fa-hand-paper Stop - Manual Deploy"]
+    S -->|No| U["fa:fa-paper-plane Auto-deploy to Production"]
     
-    U --> V[Docker Swarm Stack Update]
-    
-    style A fill:#e1f5fe
-    style K fill:#c8e6c9
-    style M fill:#fff9c4
-    style U fill:#f8bbd0
-    style V fill:#b39ddb
+    U --> V["fa:fa-server Docker Swarm Stack Update"]
 ```
 
 ### Workflows
@@ -169,8 +163,9 @@ flowchart TD
 
 3. **Release Please** (`.github/workflows/release-please.yml`)
    - Triggers on push to main
-   - Auto-increments version based on conventional commits
-   - Creates GitHub releases (starting from v1.0.0)
+   - Analyzes conventional commits since last release
+   - Creates GitHub release and git tag directly (no PR)
+   - Auto-increments version (starting from v1.0.0)
    - Closes failed Renovate PRs when new updates merge
 
 4. **Build** (`.github/workflows/build.yml`)

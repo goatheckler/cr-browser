@@ -17,12 +17,15 @@ jobs:
       - uses: actions/checkout@v4
       
       - uses: googleapis/release-please-action@v4
+        id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-github-pull-request: true
       
       - name: Close failed Renovate PRs
+        if: ${{ steps.release.outputs.release_created }}
         run: |
           gh pr list --author "renovate[bot]" --state open --json number,statusCheckRollup --jq '.[] | select(.statusCheckRollup[]? | select(.status == "FAILURE" or .conclusion == "FAILURE")) | .number' | while read pr; do
             if [ -n "$pr" ]; then
