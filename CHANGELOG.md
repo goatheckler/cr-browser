@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.2](https://github.com/goatheckler/ghcr-browser/compare/v1.1.1...v1.1.2) (2025-10-06)
+
+
+### Bug Fixes
+
+* remove broken branch check that prevented build workflow from ru… ([9ddc569](https://github.com/goatheckler/ghcr-browser/commit/9ddc5699b213c2499c3b6e41d2c67a12fd6c381e))
+* remove broken branch check that prevented build workflow from running on releases ([5fc6423](https://github.com/goatheckler/ghcr-browser/commit/5fc6423e8f2e80a550b73e4fdd4d21fdc1857138))
+* use PAT for release-please to enable workflow triggers on releas… ([1140b5b](https://github.com/goatheckler/ghcr-browser/commit/1140b5bc533e27074d40d1ad40db36662bc77854))
+* use PAT for release-please to enable workflow triggers on release PRs ([a3c78b9](https://github.com/goatheckler/ghcr-browser/commit/a3c78b9176d540af1482ed38df8394c48a613fb9))
+
 ## [1.1.1](https://github.com/goatheckler/ghcr-browser/compare/v1.1.0...v1.1.1) (2025-10-06)
 
 
