@@ -13,8 +13,11 @@ PORT_BACKEND=5214
 
 cleanup() {
   echo "[cleanup] Stopping background processes" >&2
-  [[ -n "${BACKEND_PID:-}" && -d /proc/${BACKEND_PID:-} ]] && kill $BACKEND_PID || true
-  [[ -n "${FRONTEND_PID:-}" && -d /proc/${FRONTEND_PID:-} ]] && kill $FRONTEND_PID || true
+  [[ -n "${BACKEND_PID:-}" ]] && kill $BACKEND_PID 2>/dev/null || true
+  [[ -n "${FRONTEND_PID:-}" ]] && kill $FRONTEND_PID 2>/dev/null || true
+  # Also kill any processes still on these ports
+  lsof -ti :5214 2>/dev/null | xargs -r kill 2>/dev/null || true
+  lsof -ti :5173 2>/dev/null | xargs -r kill 2>/dev/null || true
 }
 trap cleanup EXIT
 
