@@ -23,7 +23,7 @@ This document outlines the CI/CD strategy for the ghcr-browser monorepo, which c
 **Rationale**:
 - Native GitHub integration (no external service)
 - Free tier sufficient for project needs
-- Built-in container registry (ghcr.io) integration
+- Docker Hub integration for container registry
 - Simple YAML configuration
 - Good monorepo support with path filtering
 - Marketplace of pre-built actions
@@ -98,11 +98,11 @@ jobs:
     if: needs.detect-changes.outputs.backend == 'true'
     - Checkout code
     - Setup Docker Buildx
-    - Login to ghcr.io
+    - Login to Docker Hub
     - Build backend image
-    - Tag: ghcr.io/[owner]/ghcr-browser-backend:latest
-    - Tag: ghcr.io/[owner]/ghcr-browser-backend:sha-<commit-sha>
-    - Tag: ghcr.io/[owner]/ghcr-browser-backend:<version> (if tagged)
+    - Tag: thefnordling/ghcr-browser-backend:latest
+    - Tag: thefnordling/ghcr-browser-backend:sha-<commit-sha>
+    - Tag: thefnordling/ghcr-browser-backend:<version> (if tagged)
     - Push all tags
     
   build-frontend:
@@ -110,11 +110,11 @@ jobs:
     if: needs.detect-changes.outputs.frontend == 'true'
     - Checkout code
     - Setup Docker Buildx
-    - Login to ghcr.io
+    - Login to Docker Hub
     - Build frontend image
-    - Tag: ghcr.io/[owner]/ghcr-browser-frontend:latest
-    - Tag: ghcr.io/[owner]/ghcr-browser-frontend:sha-<commit-sha>
-    - Tag: ghcr.io/[owner]/ghcr-browser-frontend:<version> (if tagged)
+    - Tag: thefnordling/ghcr-browser-frontend:latest
+    - Tag: thefnordling/ghcr-browser-frontend:sha-<commit-sha>
+    - Tag: thefnordling/ghcr-browser-frontend:<version> (if tagged)
     - Push all tags
 ```
 
@@ -139,7 +139,7 @@ jobs:
 jobs:
   deploy:
     - Checkout code
-    - Pull specified image versions from ghcr.io
+    - Pull specified image versions from Docker Hub
     - Deploy to target environment (staging/production)
     - Run smoke tests
     - Notify on success/failure
@@ -151,7 +151,7 @@ jobs:
 - `frontend_version`: Image tag to deploy (default: latest)
 
 **Deployment Strategy**:
-- Pull images from ghcr.io (don't rebuild)
+- Pull images from Docker Hub (don't rebuild)
 - Update docker-compose or K8s manifests with specified versions
 - Run health checks/smoke tests post-deployment
 
@@ -196,7 +196,8 @@ Single version for entire release:
 
 ### Secrets Management
 - GitHub Secrets for:
-  - `GHCR_TOKEN`: GitHub token with package write permissions
+  - `DOCKERHUB_USERNAME`: Docker Hub username (thefnordling)
+  - `DOCKERHUB_TOKEN`: Docker Hub access token
   - `DEPLOY_KEY`: SSH/API key for deployment target
 - Never log secrets or expose in build output
 - Use minimal permission scopes
@@ -237,10 +238,10 @@ Single version for entire release:
   - [x] Backend contract tests (HealthTests, TagsContractTests, ErrorContractTests)
   - [x] Frontend E2E tests (health.spec.ts, tags.spec.ts, user-interactions.spec.ts)
   - [x] Manual validation via Playwright MCP
-- [ ] Create `.github/workflows/test.yml`
+- [x] Create `.github/workflows/test.yml`
 - [ ] Create `.github/workflows/build.yml`
 - [ ] Create `.github/workflows/deploy.yml`
-- [ ] Configure GitHub Secrets
+- [ ] Configure GitHub Secrets (DOCKERHUB_USERNAME, DOCKERHUB_TOKEN)
 - [ ] Set up branch protection rules
 - [ ] Document deployment process
 - [ ] Test full CI/CD pipeline on feature branch
@@ -249,5 +250,5 @@ Single version for entire release:
 ## References
 
 - GitHub Actions Documentation: https://docs.github.com/en/actions
-- GitHub Container Registry: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
+- Docker Hub: https://hub.docker.com/u/thefnordling
 - Docker Buildx: https://docs.docker.com/buildx/working-with-buildx/
