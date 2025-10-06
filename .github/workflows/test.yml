@@ -26,10 +26,12 @@ jobs:
               - 'backend/**'
               - 'docker-compose.yml'
               - '.github/workflows/test.yml'
+              - '.github/workflows/build.yml'
             frontend:
               - 'frontend/**'
               - 'docker-compose.yml'
               - '.github/workflows/test.yml'
+              - '.github/workflows/build.yml'
 
   # Backend tests run on self-hosted runners with persistent disk storage.
   # NuGet packages are cached locally at ~/.nuget/packages and persist between runs,
