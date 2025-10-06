@@ -13,6 +13,9 @@ PORT_BACKEND=5214
 
 cleanup() {
   echo "[cleanup] Stopping background processes" >&2
+  # Kill all background jobs spawned by this script
+  jobs -p | xargs -r kill 2>/dev/null || true
+  # Also try specific PIDs if captured
   [[ -n "${BACKEND_PID:-}" ]] && kill $BACKEND_PID 2>/dev/null || true
   [[ -n "${FRONTEND_PID:-}" ]] && kill $FRONTEND_PID 2>/dev/null || true
 }
