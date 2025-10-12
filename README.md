@@ -1,6 +1,6 @@
-# ghcr-browser
+# cr-browser
 
-Minimal web application to list GitHub Container Registry (GHCR) image tag names for a given `owner/image` and allow copying full `owner/image:tag` references to the clipboard. MVP intentionally excludes metadata enrichment (size, age, digest), pagination, truncation notices, rate‑limit distinction, retries, caching, and advanced accessibility beyond keyboard submission and copy action.
+Minimal web application to browse container registry image tags across multiple registries (GHCR, Docker Hub, Quay, GCR). Allows copying full image references to the clipboard.
 
 ## What It Does
 You enter a public GHCR image reference (`owner` and `image`). The app calls the backend which queries GHCR's tag list API (with an anonymous request and a follow‑up token attempt if required). It then displays all accessible tag names in a sortable/filterable grid. You can click a tag's full reference to copy `ghcr.io/owner/image:tag` to the clipboard.
@@ -13,13 +13,13 @@ Location: `backend/`
 ### Run (dev)
 Option A (simple):
 ```
-dotnet run --project backend/src/GhcrBrowser.Api/GhcrBrowser.Api.csproj
+dotnet run --project backend/src/CrBrowser.Api/CrBrowser.Api.csproj
 ```
 Serves API at the URL shown (default http://localhost:5214).
 
 Option B (watch):
 ```
-dotnet watch --project backend/src/GhcrBrowser.Api/GhcrBrowser.Api.csproj run
+dotnet watch --project backend/src/CrBrowser.Api/CrBrowser.Api.csproj run
 ```
 
 Endpoints:
@@ -29,7 +29,7 @@ Endpoints:
 
 ### Build Solution
 ```
-dotnet build GhcrBrowser.sln
+dotnet build CrBrowser.sln
 ```
 
 ## Frontend (SvelteKit + Tailwind)
@@ -53,7 +53,7 @@ For CORS-less local dev you can (a) proxy, or (b) start the backend first then s
 
 ## Development Quickstart
 Typical flow:
-1. Backend: `dotnet run --project backend/src/GhcrBrowser.Api/GhcrBrowser.Api.csproj`
+1. Backend: `dotnet run --project backend/src/CrBrowser.Api/CrBrowser.Api.csproj`
 2. Frontend: `npm run dev --prefix frontend`
 3. In browser: enter `owner` and `image` (e.g. `stefanprodan` and `podinfo`) then click Search.
 4. Click a full reference to copy it. Status line shows copies and counts.
@@ -101,7 +101,7 @@ docker compose down
 ```
 
 Local dev (hot reload) still uses:
-- Backend: `dotnet run --project backend/src/GhcrBrowser.Api/GhcrBrowser.Api.csproj`
+- Backend: `dotnet run --project backend/src/CrBrowser.Api/CrBrowser.Api.csproj`
 - Frontend: `npm run dev --prefix frontend`
 
 The production frontend image uses `@sveltejs/adapter-static` and nginx. To change proxy behavior edit `frontend/nginx.conf`. No Node runtime needed in production for the UI.
@@ -198,12 +198,12 @@ flowchart TD
 
 Production deployment uses Docker Swarm:
 - Stack config: `deploy/docker-compose.yml`
-- Network: `ghcr-browser-net` (external overlay)
+- Network: `cr-browser-net` (external overlay)
 - Images pulled from Docker Hub with registry auth
 
 Manual deployment:
 ```bash
-VERSION=v1.0.1 docker stack deploy --with-registry-auth -c deploy/docker-compose.yml ghcr-browser
+VERSION=v1.0.1 docker stack deploy --with-registry-auth -c deploy/docker-compose.yml cr-browser
 ```
 
 ## Contributing

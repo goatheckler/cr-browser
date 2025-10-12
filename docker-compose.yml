@@ -4,8 +4,8 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    image: thefnordling/ghcr-browser-backend:latest
-    container_name: ghcr-browser-backend
+    image: thefnordling/cr-browser-backend:latest
+    container_name: cr-browser-backend
     ports:
       - "5214:8080"
     healthcheck:
@@ -18,8 +18,8 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    image: thefnordling/ghcr-browser-frontend:latest
-    container_name: ghcr-browser-frontend
+    image: thefnordling/cr-browser-frontend:latest
+    container_name: cr-browser-frontend
     depends_on:
       backend:
         condition: service_healthy

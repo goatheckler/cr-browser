@@ -1,6 +1,44 @@
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.ComponentModel.DataAnnotations;
 
-namespace GhcrBrowser.Api;
+namespace CrBrowser.Api;
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum RegistryType
+{
+    Ghcr,
+    DockerHub,
+    Quay,
+    Gcr
+}
+
+public record RegistryConfiguration(
+    RegistryType Type,
+    string BaseUrl,
+    string? AuthUrl = null
+);
+
+public class RegistriesConfiguration
+{
+    public RegistrySettings Ghcr { get; set; } = new();
+    public RegistrySettings DockerHub { get; set; } = new();
+    public RegistrySettings Quay { get; set; } = new();
+    public RegistrySettings Gcr { get; set; } = new();
+}
+
+public class RegistrySettings
+{
+    public string BaseUrl { get; set; } = string.Empty;
+    public string AuthUrl { get; set; } = string.Empty;
+}
+
+public record RegistryResponse(
+    IReadOnlyList<string> Tags,
+    bool NotFound,
+    bool Retryable,
+    bool HasMore
+);
 
 public record ImageReference(string Owner, string Image)
 {
@@ -38,3 +76,11 @@ public sealed class ValidationService : IValidationService
 
 // Removed legacy Tag / TagPage / Truncation models in simplified tags-only API.
 public record ErrorResponse(string Code, string Message, bool Retryable);
+
+public record RegistryRequest(
+    [Required] RegistryType RegistryType,
+    [Required] [RegularExpression(@"^[a-z0-9](?:[a-z0-9-]{0,38})$")] string Owner,
+    [Required] [RegularExpression(@"^[a-z0-9]+(?:[._-][a-z0-9]+)*$")] string Image,
+    [Range(1, int.MaxValue)] int Page = 1,
+    [Range(1, 100)] int PageSize = 10
+);

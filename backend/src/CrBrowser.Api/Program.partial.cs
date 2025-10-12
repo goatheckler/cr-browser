@@ -1,3 +1,3 @@
-namespace GhcrBrowser.Api;
+namespace CrBrowser.Api;
 
 public partial class Program { }

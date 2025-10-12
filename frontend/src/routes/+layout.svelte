@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-  <title>GHCR Tag Browser</title>
+  <title>CR Browser</title>
 </svelte:head>
 
 <slot />

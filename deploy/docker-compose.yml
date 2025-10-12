@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   backend:
-    image: thefnordling/ghcr-browser-backend:${VERSION:-latest}
+    image: thefnordling/cr-browser-backend:${VERSION:-latest}
     environment:
       ASPNETCORE_URLS: http://+:8080
     healthcheck:
@@ -15,10 +15,10 @@ services:
       replicas: 1
       restart_policy: { condition: on-failure }
     networks:
-    - ghcr-browser-net
+    - cr-browser-net
 
   frontend:
-    image: thefnordling/ghcr-browser-frontend:${VERSION:-latest}
+    image: thefnordling/cr-browser-frontend:${VERSION:-latest}
     deploy:
       replicas: 1
       restart_policy: { condition: any }
@@ -27,8 +27,8 @@ services:
         delay: 5s
         order: start-first
     networks:
-      - ghcr-browser-net
+      - cr-browser-net
 
 networks:
-  ghcr-browser-net:
+  cr-browser-net:
     external: true
