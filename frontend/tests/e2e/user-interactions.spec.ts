@@ -50,5 +50,6 @@ test('empty or not found shows appropriate message', async ({ page }) => {
   await page.getByPlaceholder('image').fill('emptyrepo999999');
   await page.getByRole('button', { name: 'Search' }).click();
   // Since we can't guarantee an empty repo exists, accept either "not found" or "no tags" messages
-  await expect(page.getByText(/no.*tag|empty|0.*tag|not found|404/i)).toBeVisible({ timeout: 15_000 });
+  // Use .first() since both error message and grid overlay may match the pattern
+  await expect(page.getByText(/no.*tag|empty|0.*tag|not found|404/i).first()).toBeVisible({ timeout: 15_000 });
 });
