@@ -67,4 +67,6 @@ jobs:
         env:
           VERSION: ${{ github.event.release.tag_name }}
         run: |
+          docker service update --image thefnordling/cr-browser-backend:${VERSION} cr-browser_backend --force || true
+          docker service update --image thefnordling/cr-browser-frontend:${VERSION} cr-browser_frontend --force || true
           docker stack deploy --with-registry-auth --prune -c deploy/docker-compose.yml cr-browser
