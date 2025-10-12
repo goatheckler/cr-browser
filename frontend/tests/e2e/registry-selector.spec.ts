@@ -50,6 +50,8 @@ test.describe('Registry Selector', () => {
 	});
 
 	test('triggers new search when registry is changed', async ({ page }) => {
+		test.setTimeout(60_000); // Increase timeout for network calls to external registries
+		
 		await page.goto('/?owner=stefanprodan&image=podinfo&registry=ghcr');
 
 		await page.waitForLoadState('networkidle');
@@ -59,7 +61,8 @@ test.describe('Registry Selector', () => {
 		const responsePromise = page.waitForResponse(
 			(response) =>
 				response.url().includes('/api/registries/dockerhub/stefanprodan/podinfo/tags') &&
-				response.status() === 200
+				response.status() === 200,
+			{ timeout: 45_000 } // Allow 45s for the API call to complete
 		);
 
 		await registrySelector.selectOption('dockerhub');
