@@ -1,5 +1,5 @@
 using Xunit;
-using GhcrBrowser.Api;
+using CrBrowser.Api;
 
 public class ValidationTests
 {

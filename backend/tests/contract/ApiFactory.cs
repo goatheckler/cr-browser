@@ -1,4 +1,4 @@
-using GhcrBrowser.Api;
+using CrBrowser.Api;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 public class ApiFactory : WebApplicationFactory<Program>

@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\GhcrBrowser.Api\GhcrBrowser.Api.csproj" />
+    <ProjectReference Include="..\..\src\CrBrowser.Api\CrBrowser.Api.csproj" />
   </ItemGroup>
 
 </Project>

@@ -5,25 +5,28 @@
   import { onMount, onDestroy, tick } from 'svelte';
   import type { GridApi, GridOptions, ColDef } from 'ag-grid-community';
   import { Grid } from 'ag-grid-community';
-  let owner = '';
-  let image = '';
-  let tags: string[] = [];
-  let copied: string | null = null;
-  let copyTimer: ReturnType<typeof setTimeout> | null = null;
-  let health: { status: string; uptimeSeconds: number } | null = null;
-  let loadingHealth = true;
-  let loadingTags = false;
-  let error: string | null = null;
-  let searched = false;
+  import RegistrySelector from './RegistrySelector.svelte';
+  
+  let owner = $state('');
+  let image = $state('');
+  let registry = $state('ghcr');
+  let tags = $state<string[]>([]);
+  let copied = $state<string | null>(null);
+  let copyTimer = $state<ReturnType<typeof setTimeout> | null>(null);
+  let health = $state<{ status: string; uptimeSeconds: number } | null>(null);
+  let loadingHealth = $state(true);
+  let loadingTags = $state(false);
+  let error = $state<string | null>(null);
+  let searched = $state(false);
   // aria-live feedback
-  let announce: string | null = null;
+  let announce = $state<string | null>(null);
   interface Row { tag: string; full: string; }
-  let rowData: Row[] = [];
-  let gridApi: GridApi | null = null;
-  let gridDiv: HTMLDivElement | null = null;
-  let pageContainer: HTMLDivElement | null = null;
-  let gridCreated = false;
-  let gridHeightPx = 400;
+  let rowData = $state<Row[]>([]);
+  let gridApi = $state<GridApi | null>(null);
+  let gridDiv = $state<HTMLDivElement | null>(null);
+  let pageContainer = $state<HTMLDivElement | null>(null);
+  let gridCreated = $state(false);
+  let gridHeightPx = $state(400);
 
   const columnDefs: ColDef[] = [
     { headerName: 'Tag', field: 'tag', sortable: true, filter: true, resizable: true, sort: 'desc', sortIndex: 0 },
@@ -67,6 +70,16 @@
     }
   }
 
+  function getRegistryHost(registryType: string): string {
+    const registryHosts: Record<string, string> = {
+      ghcr: 'ghcr.io',
+      dockerhub: 'docker.io',
+      quay: 'quay.io',
+      gcr: 'gcr.io'
+    };
+    return registryHosts[registryType] || 'ghcr.io';
+  }
+
   async function fetchTags() {
     error = null;
     loadingTags = true;
@@ -77,14 +90,15 @@
       if (!owner || !image) {
         throw new Error('Owner and image required');
       }
-      const res = await fetch(`/api/images/${owner}/${image}/tags`);
+      const res = await fetch(`/api/registries/${registry}/${owner}/${image}/tags`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.message || 'Tags fetch failed');
       }
       const data = await res.json();
       tags = data.tags || [];
-      rowData = tags.map((t: string) => ({ tag: t, full: `ghcr.io/${owner}/${image}:${t}` }));
+      const host = getRegistryHost(registry);
+      rowData = tags.map((t: string) => ({ tag: t, full: `${host}/${owner}/${image}:${t}` }));
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : 'Unknown error';
     } finally {
@@ -117,27 +131,48 @@
   }
 
   onMount(() => {
+    // Read registry from URL
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlRegistry = params.get('registry');
+      if (urlRegistry) {
+        registry = urlRegistry;
+      }
+      const urlOwner = params.get('owner');
+      const urlImage = params.get('image');
+      if (urlOwner) owner = urlOwner;
+      if (urlImage) image = urlImage;
+    }
+    
     fetchHealth();
     maybeCreateGrid();
     computeGridHeight();
     window.addEventListener('resize', computeGridHeight);
   });
 
+  function handleRegistryChange() {
+    if (owner && image && searched) {
+      fetchTags();
+    }
+  }
+
   onDestroy(() => {
     window.removeEventListener('resize', computeGridHeight);
   });
 
-  $: if (gridCreated && gridApi) {
-    gridApi.setRowData(rowData);
-    if (loadingTags) {
-      gridApi.showLoadingOverlay();
-    } else if (rowData.length === 0) {
-      gridApi.showNoRowsOverlay();
-    } else {
-      gridApi.hideOverlay();
+  $effect(() => {
+    if (gridCreated && gridApi) {
+      gridApi.setRowData(rowData);
+      if (loadingTags) {
+        gridApi.showLoadingOverlay();
+      } else if (rowData.length === 0) {
+        gridApi.showNoRowsOverlay();
+      } else {
+        gridApi.hideOverlay();
+      }
+      try { gridApi.sizeColumnsToFit(); } catch {}
     }
-    try { gridApi.sizeColumnsToFit(); } catch {}
-  }
+  });
 
   function maybeCreateGrid() {
     if (!gridCreated && gridDiv) {
@@ -162,7 +197,10 @@
 
 <div class="min-h-screen bg-background text-white p-6 space-y-6" bind:this={pageContainer}>
   <div class="flex items-start justify-between gap-4 flex-wrap w-full">
-    <h1 class="text-2xl font-bold">GHCR Tag Browser</h1>
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+      <img src="/favicon.svg" alt="" class="w-8 h-8" />
+      CR Browser
+    </h1>
     <div class="text-sm text-right">
       {#if loadingHealth}
         <div>Checking health...</div>
@@ -176,6 +214,7 @@
 
   <section class="space-y-2">
     <div class="flex gap-2 items-center flex-wrap">
+      <RegistrySelector bind:registry onchange={handleRegistryChange} />
       <input placeholder="owner" bind:value={owner} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" on:keydown={onKey} />
       <input placeholder="image" bind:value={image} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" on:keydown={onKey} />
       <button on:click={submit} class="px-3 py-1 bg-primary hover:bg-primary/80 rounded disabled:opacity-50" disabled={loadingTags}>Search</button>

@@ -1,0 +1,330 @@
+openapi: 3.1.0
+info:
+  title: Container Registry Browser API
+  version: 0.2.0
+  description: |
+    Multi-registry container tag browser API. Supports GitHub Container Registry (GHCR), 
+    Docker Hub, Quay.io, Google Container Registry, and more.
+    
+    Version 0.2.0 adds multi-registry support while maintaining backward compatibility 
+    with the GHCR-only v0.1.0 endpoints.
+
+servers:
+  - url: /api
+    description: API base path
+
+paths:
+  # New multi-registry endpoint
+  /registries/{registryType}/{owner}/{image}/tags:
+    get:
+      summary: List tags for an image on a specific registry
+      description: |
+        Returns tag names for a given image on the specified container registry.
+        Supports pagination via the `last` parameter and `Link` headers.
+      operationId: listRegistryImageTags
+      tags:
+        - Tags
+      parameters:
+        - name: registryType
+          in: path
+          required: true
+          description: Container registry identifier
+          schema:
+            type: string
+            enum:
+              - ghcr
+              - dockerhub
+              - quay
+              - gcr
+            example: ghcr
+        - name: owner
+          in: path
+          required: true
+          description: |
+            Repository owner, organization, or project. 
+            For Docker Hub official images, use 'library' or '_'.
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9][a-zA-Z0-9_-]*$'
+            minLength: 1
+            maxLength: 255
+          example: microsoft
+        - name: image
+          in: path
+          required: true
+          description: Image or repository name
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9][a-zA-Z0-9_.-/]*$'
+            minLength: 1
+            maxLength: 255
+          example: dotnet-samples
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of tags to return per page (max 500)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+          example: 100
+        - name: last
+          in: query
+          required: false
+          description: |
+            Pagination cursor from previous response. 
+            Format is registry-specific (opaque token).
+          schema:
+            type: string
+          example: v1.0.5
+      responses:
+        '200':
+          description: Tag list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagListResponse'
+              examples:
+                ghcrExample:
+                  summary: GHCR tag list
+                  value:
+                    tags:
+                      - latest
+                      - v1.0.0
+                      - v1.0.1
+                      - main
+                    hasMore: true
+                dockerHubExample:
+                  summary: Docker Hub tag list
+                  value:
+                    tags:
+                      - latest
+                      - 1.25.3
+                      - 1.25.3-alpine
+                      - stable
+                    hasMore: false
+        '400':
+          description: Invalid request (unsupported registry or invalid format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unsupportedRegistry:
+                  summary: Unsupported registry type
+                  value:
+                    code: UnsupportedRegistry
+                    message: Registry type 'invalid' is not supported. Supported registries: ghcr, dockerhub, quay, gcr
+                invalidFormat:
+                  summary: Invalid repository format
+                  value:
+                    code: InvalidFormat
+                    message: Invalid repository format. Expected format {owner}/{image}
+        '404':
+          description: Repository not found on the specified registry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  summary: Repository not found
+                  value:
+                    code: NotFound
+                    message: Repository 'owner/image' not found on ghcr
+        '429':
+          description: Rate limited by registry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                rateLimited:
+                  summary: Rate limit exceeded
+                  value:
+                    code: RateLimited
+                    message: Rate limit exceeded for ghcr. Please retry after a few seconds.
+        '503':
+          description: Registry temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unavailable:
+                  summary: Registry unavailable
+                  value:
+                    code: UpstreamError
+                    message: Registry ghcr is temporarily unavailable. Please retry.
+
+  # Legacy GHCR-only endpoint (backward compatibility)
+  /images/{owner}/{image}/tags:
+    get:
+      summary: List tags for a GHCR image (legacy endpoint)
+      deprecated: true
+      description: |
+        Legacy endpoint that defaults to GitHub Container Registry.
+        
+        **Deprecated**: Use `/registries/ghcr/{owner}/{image}/tags` instead.
+        This endpoint is maintained for backward compatibility and will be removed in v1.0.
+      operationId: listImageTags
+      tags:
+        - Tags (Legacy)
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          description: Repository owner or organization
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9][a-zA-Z0-9_-]*$'
+            minLength: 1
+            maxLength: 255
+          example: microsoft
+        - name: image
+          in: path
+          required: true
+          description: Image or repository name
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9][a-zA-Z0-9_.-/]*$'
+            minLength: 1
+            maxLength: 255
+          example: dotnet-samples
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - name: last
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tag list (defaults to GHCR)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagListResponse'
+        '400':
+          description: Invalid input format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Repository not found on GHCR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Health endpoint
+  /health:
+    get:
+      summary: Service health check
+      description: Returns the health status and uptime of the API service
+      operationId: health
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, degraded]
+                    example: ok
+                  uptimeSeconds:
+                    type: integer
+                    minimum: 0
+                    description: Number of seconds the service has been running
+                    example: 3600
+                required:
+                  - status
+                  - uptimeSeconds
+
+components:
+  schemas:
+    TagListResponse:
+      type: object
+      description: Response containing a list of tags and pagination info
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+            pattern: '^[a-zA-Z0-9][a-zA-Z0-9_.-]*$'
+            minLength: 1
+            maxLength: 128
+          description: List of tag names
+          example:
+            - latest
+            - v1.0.0
+            - v1.0.1
+            - main
+        hasMore:
+          type: boolean
+          description: |
+            Indicates whether more pages of tags are available.
+            If true, use the last tag in the current response as the `last` parameter 
+            for the next request.
+          example: true
+      required:
+        - tags
+        - hasMore
+
+    Error:
+      type: object
+      description: Standard error response
+      properties:
+        code:
+          type: string
+          enum:
+            - InvalidFormat
+            - NotFound
+            - UnsupportedRegistry
+            - RateLimited
+            - UpstreamError
+          description: Machine-readable error code
+          example: NotFound
+        message:
+          type: string
+          description: Human-readable error message
+          example: Repository 'owner/image' not found on ghcr
+      required:
+        - code
+        - message
+
+    RegistryType:
+      type: string
+      enum:
+        - ghcr
+        - dockerhub
+        - quay
+        - gcr
+      description: |
+        Supported container registry types:
+        - `ghcr`: GitHub Container Registry (ghcr.io)
+        - `dockerhub`: Docker Hub (registry-1.docker.io)
+        - `quay`: Quay.io (quay.io)
+        - `gcr`: Google Container Registry (gcr.io)
+      example: ghcr
+
+tags:
+  - name: Tags
+    description: Tag listing operations for multi-registry support
+  - name: Tags (Legacy)
+    description: Legacy GHCR-only endpoints (deprecated)
+  - name: Health
+    description: Service health and monitoring

@@ -5,7 +5,7 @@
 
 ## Overview
 
-This document provides instructions for running all test suites locally for the ghcr-browser project.
+This document provides instructions for running all test suites locally for the cr-browser project.
 
 ## Test Suite Summary
 

@@ -1,6 +1,6 @@
 # Deployment Configuration
 
-This directory contains production deployment configuration for the ghcr-browser application.
+This directory contains production deployment configuration for the cr-browser application.
 
 ## Files
 
@@ -23,21 +23,21 @@ Non-prerelease GitHub releases automatically deploy to production:
 To manually deploy a specific version:
 
 ```bash
-VERSION=v1.0.0 docker stack deploy -c deploy/docker-compose.yml ghcr-browser
+VERSION=v1.0.0 docker stack deploy -c deploy/docker-compose.yml cr-browser
 ```
 
 To deploy latest:
 
 ```bash
-docker stack deploy -c deploy/docker-compose.yml ghcr-browser
+docker stack deploy -c deploy/docker-compose.yml cr-browser
 ```
 
 ## Network Requirements
 
-The `ghcr-browser-net` overlay network must exist before deployment:
+The `cr-browser-net` overlay network must exist before deployment:
 
 ```bash
-docker network create --driver overlay ghcr-browser-net
+docker network create --driver overlay cr-browser-net
 ```
 
 ## Prerelease Versions

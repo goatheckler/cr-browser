@@ -5,7 +5,7 @@ set -euo pipefail
 # Requirements: dotnet, node (v20), and playwright browsers installed (npx playwright install --with-deps chromium)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKEND_PROJ="$ROOT_DIR/backend/src/GhcrBrowser.Api/GhcrBrowser.Api.csproj"
+BACKEND_PROJ="$ROOT_DIR/backend/src/CrBrowser.Api/CrBrowser.Api.csproj"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 
 PORT_FRONTEND=5173

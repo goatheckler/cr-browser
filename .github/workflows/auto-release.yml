@@ -1,7 +1,8 @@
 name: Auto Release
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - main
 
@@ -13,24 +14,14 @@ jobs:
   auto-release:
     name: Auto Release on Renovate Merge
     runs-on: self-hosted
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'auto-release')
     steps:
-      - name: Check if Renovate commit
-        id: check_renovate
-        run: |
-          if echo "${{ github.event.head_commit.message }}" | grep -q "Co-authored-by: Renovate Bot"; then
-            echo "is_renovate=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_renovate=false" >> $GITHUB_OUTPUT
-          fi
-      
       - uses: actions/checkout@v4
-        if: steps.check_renovate.outputs.is_renovate == 'true'
         with:
           fetch-depth: 0
           token: ${{ secrets.RENOVATE_TOKEN }}
       
       - name: Get latest version and increment
-        if: steps.check_renovate.outputs.is_renovate == 'true'
         id: version
         run: |
           latest_tag=$(git tag | grep "^v" | sort -V | tail -1)
@@ -46,7 +37,6 @@ jobs:
           echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
       
       - name: Create tag and release
-        if: steps.check_renovate.outputs.is_renovate == 'true'
         run: |
           new_version="${{ steps.version.outputs.new_version }}"
           
@@ -68,7 +58,6 @@ jobs:
           GH_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
       
       - name: Close failed Renovate PRs
-        if: steps.check_renovate.outputs.is_renovate == 'true'
         run: |
           gh pr list --author "renovate[bot]" --state open --json number,statusCheckRollup --jq '.[] | select(.statusCheckRollup[]? | select(.status == "FAILURE" or .conclusion == "FAILURE")) | .number' | while read pr; do
             if [ -n "$pr" ]; then

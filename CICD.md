@@ -1,11 +1,11 @@
-# CI/CD Strategy for ghcr-browser
+# CI/CD Strategy for cr-browser
 
 **Last Updated**: 2025-10-06  
 **Status**: Test and Build Workflows Complete - Ready for Deploy Workflow
 
 ## Overview
 
-This document outlines the CI/CD strategy for the ghcr-browser monorepo, which contains a .NET backend API and a SvelteKit frontend, both deployed as separate container images.
+This document outlines the CI/CD strategy for the cr-browser monorepo, which contains a .NET backend API and a SvelteKit frontend, both deployed as separate container images.
 
 ## Architecture Decisions
 
@@ -101,13 +101,13 @@ jobs:
     - Extract metadata for backend
     - Extract metadata for frontend
     - Build and push backend image
-      - Tag: thefnordling/ghcr-browser-backend:latest
-      - Tag: thefnordling/ghcr-browser-backend:<release-tag>
-      - Tag: thefnordling/ghcr-browser-backend:sha-<commit-sha>
+      - Tag: thefnordling/cr-browser-backend:latest
+      - Tag: thefnordling/cr-browser-backend:<release-tag>
+      - Tag: thefnordling/cr-browser-backend:sha-<commit-sha>
     - Build and push frontend image
-      - Tag: thefnordling/ghcr-browser-frontend:latest
-      - Tag: thefnordling/ghcr-browser-frontend:<release-tag>
-      - Tag: thefnordling/ghcr-browser-frontend:sha-<commit-sha>
+      - Tag: thefnordling/cr-browser-frontend:latest
+      - Tag: thefnordling/cr-browser-frontend:<release-tag>
+      - Tag: thefnordling/cr-browser-frontend:sha-<commit-sha>
 ```
 
 **Image Building**:
@@ -163,8 +163,8 @@ Both containers receive the same version tag, auto-incremented on Renovate merge
 4. New tag and GitHub release created automatically
 5. Both containers automatically built and tagged with release version
 6. Images available as:
-   - `thefnordling/ghcr-browser-backend:1.2.4`
-   - `thefnordling/ghcr-browser-frontend:1.2.4`
+   - `thefnordling/cr-browser-backend:1.2.4`
+   - `thefnordling/cr-browser-frontend:1.2.4`
    - Both also tagged as `:latest` and `:sha-<commit>`
 
 **Manual Releases**: Developers can create releases manually via GitHub UI for non-dependency updates
