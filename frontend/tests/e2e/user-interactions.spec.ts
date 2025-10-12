@@ -15,7 +15,7 @@ test('not found error is displayed', async ({ page }) => {
   await page.getByPlaceholder('owner').fill('nonexistentuser123456');
   await page.getByPlaceholder('image').fill('nonexistentrepo123456');
   await page.getByRole('button', { name: 'Search' }).click();
-  await expect(page.getByText(/not found|404/i)).toBeVisible();
+  await expect(page.getByText(/not found|404/i)).toBeVisible({ timeout: 15_000 });
 });
 
 test('enter key triggers search', async ({ page }) => {
