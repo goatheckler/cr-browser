@@ -12,8 +12,8 @@ test('invalid format error is displayed', async ({ page }) => {
 test('not found error is displayed', async ({ page }) => {
   await page.goto('/');
   await page.getByText(/API healthy/).waitFor();
-  await page.getByPlaceholder('owner').fill('nonexistentuser123456');
-  await page.getByPlaceholder('image').fill('nonexistentrepo123456');
+  await page.getByPlaceholder('owner').fill('thisuserdoesnotexist999999');
+  await page.getByPlaceholder('image').fill('thisrepodoesnotexist999999');
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByText(/not found|404/i)).toBeVisible({ timeout: 15_000 });
 });

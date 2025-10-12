@@ -104,6 +104,11 @@ public abstract class OciRegistryClientBase : IContainerRegistryClient
         {
             return (null, false, true);
         }
+        // Treat 403 Forbidden as NotFound for public registries - typically means repo doesn't exist
+        if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            return (null, false, true);
+        }
         if ((int)resp.StatusCode == 429 || (int)resp.StatusCode >= 500)
         {
             return (null, true, false);
