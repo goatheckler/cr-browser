@@ -157,8 +157,8 @@ Both containers receive the same version tag, auto-incremented on Renovate merge
 - Version is automatically determined from latest tag
 
 **Release Process**:
-1. Renovate PR merges to main
-2. Auto-release workflow detects Renovate commit
+1. Renovate PR with `auto-release` label merges to main
+2. Auto-release workflow detects merged PR via label
 3. Latest tag fetched (e.g., `v1.2.3`) and patch incremented (→ `v1.2.4`)
 4. New tag and GitHub release created automatically
 5. Both containers automatically built and tagged with release version

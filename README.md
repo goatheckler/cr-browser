@@ -129,7 +129,7 @@ flowchart TD
     J --> K[Push to main]
     I --> K
     
-    K --> L{Renovate Commit?}
+    K --> L{Renovate PR?}
     L -->|Yes| M[Auto-release Workflow]
     L -->|No| N[Manual Release Option]
     
@@ -164,12 +164,12 @@ flowchart TD
 2. **Renovate** (`.github/workflows/renovate.yml`)
    - Runs every 6 hours
    - Scans for dependency updates (npm, NuGet, Docker base images)
-   - Creates PRs with conventional commits
+   - Creates PRs with conventional commits and `auto-release` label
    - Auto-merges minor/patch updates after tests pass
    - Logs activity to `RENOVATE.md`
 
 3. **Auto Release** (`.github/workflows/auto-release.yml`)
-   - Triggers on push to main by `renovate[bot]`
+   - Triggers when Renovate PRs with `auto-release` label are merged to main
    - Fetches latest version tag (e.g., `v1.2.3`)
    - Auto-increments patch version (→ `v1.2.4`)
    - Creates GitHub release and git tag

@@ -18,6 +18,7 @@
   "ignoreTests": false,
   "dependencyDashboard": true,
   "postUpdateOptions": ["npmDedupe"],
+  "labels": ["dependencies", "auto-release"],
   "packageRules": [
     {
       "description": "Auto-merge non-major updates that pass tests",
