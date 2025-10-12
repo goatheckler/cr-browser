@@ -12,7 +12,7 @@ public sealed class GhcrClient : OciRegistryClientBase, IGhcrClient
     public override RegistryType RegistryType => RegistryType.Ghcr;
     public override string BaseUrl => "https://ghcr.io";
 
-    public GhcrClient(HttpClient http) : base(http)
+    public GhcrClient(HttpClient http, ILogger<GhcrClient> logger) : base(http, logger)
     {
         if (_http.BaseAddress == null)
             _http.BaseAddress = new Uri("https://ghcr.io/");
@@ -23,14 +23,23 @@ public sealed class GhcrClient : OciRegistryClientBase, IGhcrClient
         var tokenUrl = $"token?scope=repository:{repository}:pull&service=ghcr.io";
         using var req = new HttpRequestMessage(HttpMethod.Get, tokenUrl);
         var resp = await _http.SendAsync(req, ct);
-        if (!resp.IsSuccessStatusCode) return null;
+        if (!resp.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Token request failed with status {StatusCode} for {Repository}", resp.StatusCode, repository);
+            return null;
+        }
         try
         {
             using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct));
             if (doc.RootElement.TryGetProperty("token", out var t))
                 return t.GetString();
+            
+            _logger.LogWarning("Token response missing 'token' property for {Repository}", repository);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to parse token response for {Repository}", repository);
+        }
         return null;
     }
 

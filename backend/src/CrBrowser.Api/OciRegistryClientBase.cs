@@ -6,14 +6,16 @@ namespace CrBrowser.Api;
 public abstract class OciRegistryClientBase : IContainerRegistryClient
 {
     protected readonly HttpClient _http;
+    protected readonly ILogger _logger;
     protected static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
     public abstract RegistryType RegistryType { get; }
     public abstract string BaseUrl { get; }
 
-    protected OciRegistryClientBase(HttpClient http)
+    protected OciRegistryClientBase(HttpClient http, ILogger logger)
     {
         _http = http;
+        _logger = logger;
     }
 
     protected abstract Task<string?> AcquireTokenAsync(string repository, CancellationToken ct);
@@ -38,23 +40,41 @@ public abstract class OciRegistryClientBase : IContainerRegistryClient
         var url = $"v2/{repository}/tags/list?n={pageSize}" + 
                   (string.IsNullOrEmpty(last) ? string.Empty : $"&last={Uri.EscapeDataString(last)}");
 
+        _logger.LogInformation("Fetching tags for {Repository} from {Registry}", repository, RegistryType);
+        
         var (resp, retry, notFound) = await SendAsync(url, bearer: null, ct);
-        if (notFound) return new RegistryResponse(Array.Empty<string>(), true, false, false);
+        if (notFound)
+        {
+            _logger.LogInformation("Repository {Repository} not found (initial request)", repository);
+            return new RegistryResponse(Array.Empty<string>(), true, false, false);
+        }
         
         if (resp is null && retry)
         {
+            _logger.LogInformation("Acquiring token for {Repository}", repository);
             var token = await AcquireTokenAsync(repository, ct);
+            if (token == null)
+            {
+                _logger.LogWarning("Failed to acquire token for {Repository}", repository);
+            }
+            
             (resp, retry, notFound) = await SendAsync(url, token, ct);
-            if (notFound) return new RegistryResponse(Array.Empty<string>(), true, false, false);
+            if (notFound)
+            {
+                _logger.LogInformation("Repository {Repository} not found (after token)", repository);
+                return new RegistryResponse(Array.Empty<string>(), true, false, false);
+            }
             
             if (resp is null)
             {
+                _logger.LogWarning("Request failed for {Repository} - Retry: {Retry}", repository, retry);
                 return new RegistryResponse(Array.Empty<string>(), false, retry, false);
             }
         }
 
         if (resp is null)
         {
+            _logger.LogWarning("No response for {Repository} - Retry: {Retry}", repository, retry);
             return new RegistryResponse(Array.Empty<string>(), false, retry, false);
         }
 
@@ -81,10 +101,12 @@ public abstract class OciRegistryClientBase : IContainerRegistryClient
                 if (tags.Count == pageSize) hasMore = true;
             }
 
+            _logger.LogInformation("Retrieved {Count} tags for {Repository}", tags.Count, repository);
             return new RegistryResponse(tags, false, false, hasMore);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to parse response for {Repository}", repository);
             return new RegistryResponse(Array.Empty<string>(), false, true, false);
         }
     }
@@ -100,6 +122,8 @@ public abstract class OciRegistryClientBase : IContainerRegistryClient
 
         var resp = await _http.SendAsync(req, ct);
         
+        _logger.LogInformation("HTTP {Method} {Url} -> {StatusCode}", req.Method, relativeUrl, (int)resp.StatusCode);
+        
         if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
             return (null, false, true);
@@ -107,6 +131,7 @@ public abstract class OciRegistryClientBase : IContainerRegistryClient
         // Treat 403 Forbidden as NotFound for public registries - typically means repo doesn't exist
         if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden)
         {
+            _logger.LogInformation("Treating 403 Forbidden as NotFound for {Url}", relativeUrl);
             return (null, false, true);
         }
         if ((int)resp.StatusCode == 429 || (int)resp.StatusCode >= 500)
@@ -119,6 +144,7 @@ public abstract class OciRegistryClientBase : IContainerRegistryClient
         }
         if (!resp.IsSuccessStatusCode)
         {
+            _logger.LogWarning("Unexpected status code {StatusCode} for {Url}", (int)resp.StatusCode, relativeUrl);
             return (null, false, false);
         }
         

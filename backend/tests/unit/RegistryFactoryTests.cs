@@ -309,7 +309,8 @@ public class RegistryFactoryTests
             Gcr = new CrBrowser.Api.RegistrySettings { BaseUrl = "https://gcr.io", AuthUrl = "https://gcr.io/v2/token" }
         };
         
-        var factory = new CrBrowser.Api.RegistryFactory(mockHttpClientFactory, config);
+        var loggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(builder => { });
+        var factory = new CrBrowser.Api.RegistryFactory(mockHttpClientFactory, loggerFactory, config);
         
         Assert.NotNull(factory);
         Assert.True(factory.IsSupported(CrBrowser.Api.RegistryType.Ghcr));

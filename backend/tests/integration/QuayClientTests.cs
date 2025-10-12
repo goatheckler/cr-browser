@@ -1,5 +1,7 @@
 namespace CrBrowser.Tests.Integration;
 
+using Microsoft.Extensions.Logging;
+
 public class QuayClientTests
 {
     private CrBrowser.Api.IContainerRegistryClient CreateClient()
@@ -9,7 +11,10 @@ public class QuayClientTests
         httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("ghcr-browser/0.0.1");
         httpClient.Timeout = TimeSpan.FromSeconds(10);
         
-        return new CrBrowser.Api.QuayClient(httpClient);
+        var loggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(builder => { });
+        var logger = loggerFactory.CreateLogger<CrBrowser.Api.QuayClient>();
+        
+        return new CrBrowser.Api.QuayClient(httpClient, logger);
     }
 
     [Fact]

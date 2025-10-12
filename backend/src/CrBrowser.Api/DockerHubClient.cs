@@ -7,7 +7,7 @@ public sealed class DockerHubClient : OciRegistryClientBase
     public override RegistryType RegistryType => RegistryType.DockerHub;
     public override string BaseUrl => "https://registry-1.docker.io";
 
-    public DockerHubClient(HttpClient http) : base(http)
+    public DockerHubClient(HttpClient http, ILogger<DockerHubClient> logger) : base(http, logger)
     {
         if (_http.BaseAddress == null)
             _http.BaseAddress = new Uri("https://registry-1.docker.io/");
@@ -23,15 +23,24 @@ public sealed class DockerHubClient : OciRegistryClientBase
         using var req = new HttpRequestMessage(HttpMethod.Get, authUrl);
         var resp = await authClient.SendAsync(req, ct);
         
-        if (!resp.IsSuccessStatusCode) return null;
+        if (!resp.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Docker Hub token request failed with status {StatusCode} for {Repository}", resp.StatusCode, repository);
+            return null;
+        }
         
         try
         {
             using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct));
             if (doc.RootElement.TryGetProperty("token", out var t))
                 return t.GetString();
+            
+            _logger.LogWarning("Docker Hub token response missing 'token' property for {Repository}", repository);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to parse Docker Hub token response for {Repository}", repository);
+        }
         
         return null;
     }

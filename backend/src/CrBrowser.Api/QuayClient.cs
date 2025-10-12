@@ -7,7 +7,7 @@ public sealed class QuayClient : OciRegistryClientBase
     public override RegistryType RegistryType => RegistryType.Quay;
     public override string BaseUrl => "https://quay.io";
 
-    public QuayClient(HttpClient http) : base(http)
+    public QuayClient(HttpClient http, ILogger<QuayClient> logger) : base(http, logger)
     {
         if (_http.BaseAddress == null)
             _http.BaseAddress = new Uri("https://quay.io/");
@@ -31,7 +31,10 @@ public sealed class QuayClient : OciRegistryClientBase
             if (doc.RootElement.TryGetProperty("token", out var t))
                 return t.GetString();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse Quay authentication token for repository {Repository}", repository);
+        }
         
         return null;
     }

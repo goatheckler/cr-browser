@@ -1,5 +1,7 @@
 namespace CrBrowser.Tests.Integration;
 
+using Microsoft.Extensions.Logging;
+
 public class DockerHubClientTests
 {
     private CrBrowser.Api.IContainerRegistryClient CreateClient()
@@ -9,7 +11,10 @@ public class DockerHubClientTests
         httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("ghcr-browser/0.0.1");
         httpClient.Timeout = TimeSpan.FromSeconds(10);
         
-        return new CrBrowser.Api.DockerHubClient(httpClient);
+        var loggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(builder => { });
+        var logger = loggerFactory.CreateLogger<CrBrowser.Api.DockerHubClient>();
+        
+        return new CrBrowser.Api.DockerHubClient(httpClient, logger);
     }
 
     [Fact]
