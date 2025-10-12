@@ -65,6 +65,13 @@ public abstract class OciRegistryClientBase : IContainerRegistryClient
                 return new RegistryResponse(Array.Empty<string>(), true, false, false);
             }
             
+            // If we still get 401 after acquiring token, the repository likely doesn't exist
+            if (resp is null && retry)
+            {
+                _logger.LogInformation("Repository {Repository} not found (401 after token acquisition)", repository);
+                return new RegistryResponse(Array.Empty<string>(), true, false, false);
+            }
+            
             if (resp is null)
             {
                 _logger.LogWarning("Request failed for {Repository} - Retry: {Retry}", repository, retry);
