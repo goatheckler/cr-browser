@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('GHCR lists packages with valid authentication', async ({ page }) => {
+  test.skip(!process.env.GITHUB_PAT, 'Requires real GITHUB_PAT environment variable');
   const validToken = process.env.GITHUB_PAT || 'ghp_' + 'a'.repeat(36);
   
   await page.goto('/');
@@ -25,13 +26,14 @@ test('GHCR lists packages with valid authentication', async ({ page }) => {
   await dialog.getByPlaceholder(/owner/i).fill('testorg');
   await dialog.getByRole('button', { name: /load|browse/i }).click();
   
-  await expect(page.getByText(/loading/i)).toBeVisible();
+  await expect(dialog.getByText('Loading images...')).toBeVisible();
   
   const imageList = page.locator('[data-testid="image-list"]');
   await expect(imageList).toBeVisible({ timeout: 10000 });
 });
 
 test('GHCR shows package metadata', async ({ page }) => {
+  test.skip(!process.env.GITHUB_PAT, 'Requires real GITHUB_PAT environment variable');
   const validToken = process.env.GITHUB_PAT || 'ghp_' + 'a'.repeat(36);
   
   await page.goto('/');

@@ -6,7 +6,7 @@ test('GCR shows "Project ID" label instead of "Owner"', async ({ page }) => {
   
   await page.getByRole('combobox').selectOption('gcr');
   
-  await expect(page.getByText(/project id/i)).toBeVisible();
+  await expect(page.getByText('Project ID:', { exact: true })).toBeVisible();
   await expect(page.getByText(/^owner$/i)).not.toBeVisible();
 });
 

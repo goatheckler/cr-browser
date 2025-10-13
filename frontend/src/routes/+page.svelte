@@ -199,12 +199,15 @@
     }
   }
 
-  function handleImageSelected(selectedImage: ImageListing) {
+  async function handleImageSelected(selectedImage: ImageListing) {
     owner = selectedImage.owner;
     image = selectedImage.imageName;
     registry = selectedImage.registryType.toLowerCase();
     showBrowseDialog = false;
-    fetchTags();
+    searched = true;
+    maybeCreateGrid();
+    await tick();
+    await fetchTags();
   }
 
   function getRegistryType(): 'GHCR' | 'DockerHub' | 'Quay' | 'GCR' {
@@ -247,11 +250,16 @@
       {#if registry === 'ghcr' && $ghcrCredential}
         <button onclick={handleClearToken} class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">Clear Token</button>
       {/if}
-      <input placeholder={registry === 'gcr' ? 'project-id' : 'owner'} bind:value={owner} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" onkeydown={onKey} />
+      <label for="owner-input" class="text-sm text-gray-300">{registry === 'gcr' ? 'Project ID' : 'Owner'}:</label>
+      <input id="owner-input" placeholder={registry === 'gcr' ? 'project-id' : 'owner'} bind:value={owner} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" onkeydown={onKey} />
       <button onclick={() => showBrowseDialog = true} class="px-3 py-1 bg-surface hover:bg-surface/80 rounded border border-primary">Browse Images</button>
-      <input placeholder="image" bind:value={image} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" onkeydown={onKey} />
+      <label for="image-input" class="text-sm text-gray-300">Image:</label>
+      <input id="image-input" placeholder="image" bind:value={image} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" onkeydown={onKey} />
       <button onclick={submit} class="px-3 py-1 bg-primary hover:bg-primary/80 rounded disabled:opacity-50" disabled={loadingTags}>Search</button>
     </div>
+    {#if registry === 'gcr'}
+      <div class="text-sm text-gray-400">Project ID format: lowercase alphanumeric with hyphens (e.g., google-containers)</div>
+    {/if}
     {#if error}
       <div class="text-red-400 text-sm">{error}</div>
     {/if}

@@ -9,10 +9,13 @@ export async function listRepositories(
   totalCount: number;
   nextPageUrl: string | null;
 }> {
-  const url = nextPageUrl || 
-    new URL(`/api/registries/dockerhub/${namespace}/images?pageSize=${pageSize}`, window.location.origin).toString();
+  const url = new URL(`/api/registries/dockerhub/${namespace}/images`, window.location.origin);
+  url.searchParams.set('pageSize', pageSize.toString());
+  if (nextPageUrl) {
+    url.searchParams.set('nextPageUrl', nextPageUrl);
+  }
 
-  const response = await fetch(url);
+  const response = await fetch(url.toString());
 
   if (!response.ok) {
     if (response.status === 404) {

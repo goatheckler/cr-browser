@@ -46,7 +46,7 @@ test('shows retry button on error', async ({ page }) => {
   await page.goto('/');
   await page.getByText(/API healthy/).waitFor();
   
-  await page.route('**/v2/repositories/**', route => route.abort());
+  await page.route('**/api/registries/dockerhub/**', route => route.abort());
   
   await page.getByRole('combobox').selectOption('dockerhub');
   await page.getByRole('button', { name: 'Browse Images' }).click();
@@ -68,7 +68,7 @@ test('retry button clears error and reloads', async ({ page }) => {
   await page.getByText(/API healthy/).waitFor();
   
   let requestCount = 0;
-  await page.route('**/v2/repositories/**', route => {
+  await page.route('**/api/registries/dockerhub/**', route => {
     requestCount++;
     if (requestCount === 1) {
       route.abort();
@@ -101,7 +101,7 @@ test('shows network error for failed requests', async ({ page }) => {
   await page.goto('/');
   await page.getByText(/API healthy/).waitFor();
   
-  await page.route('**/v2/repositories/**', route => route.abort('failed'));
+  await page.route('**/api/registries/dockerhub/**', route => route.abort('failed'));
   
   await page.getByRole('combobox').selectOption('dockerhub');
   await page.getByRole('button', { name: 'Browse Images' }).click();

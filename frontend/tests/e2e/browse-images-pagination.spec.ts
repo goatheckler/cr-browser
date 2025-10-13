@@ -20,9 +20,10 @@ test('Docker Hub pagination loads next page on scroll', async ({ page }) => {
   const initialCount = await initialRows.count();
   expect(initialCount).toBeGreaterThan(10);
   
-  await imageList.evaluate(el => el.scrollTop = el.scrollHeight);
+  const scrollableContainer = page.locator('[data-testid="scrollable-container"]');
+  await scrollableContainer.evaluate(el => el.scrollTop = el.scrollHeight);
   
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(3000);
   
   const updatedRows = imageList.locator('tbody tr');
   const updatedCount = await updatedRows.count();
@@ -46,7 +47,8 @@ test('pagination shows loading indicator', async ({ page }) => {
   const imageList = page.locator('[data-testid="image-list"]');
   await expect(imageList).toBeVisible({ timeout: 10000 });
   
-  await imageList.evaluate(el => el.scrollTop = el.scrollHeight);
+  const scrollableContainer = page.locator('[data-testid="scrollable-container"]');
+  await scrollableContainer.evaluate(el => el.scrollTop = el.scrollHeight);
   
   await expect(page.getByText(/loading.*more|loading.*/i)).toBeVisible();
 });

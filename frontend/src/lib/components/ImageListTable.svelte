@@ -1,16 +1,18 @@
 <script lang="ts">
 	import type { ImageListing } from '$lib/types/browse';
 
-	export let images: ImageListing[];
-	export let onSelect: (image: ImageListing) => void;
+	let { images, onSelect }: { 
+		images: ImageListing[]; 
+		onSelect: (image: ImageListing) => void 
+	} = $props();
 
 	function formatDate(date: Date | null): string {
 		if (!date) return 'N/A';
 		return new Date(date).toLocaleDateString();
 	}
 
-	function formatNumber(num: number | undefined): string {
-		if (num === undefined) return 'N/A';
+	function formatNumber(num: number | undefined | null): string {
+		if (num === undefined || num === null) return 'N/A';
 		return num.toLocaleString();
 	}
 </script>
@@ -41,7 +43,7 @@
 		</thead>
 		<tbody class="bg-gray-800 divide-y divide-gray-700">
 			{#each images as image}
-				<tr class="hover:bg-gray-700">
+				<tr class="hover:bg-gray-700 cursor-pointer" onclick={() => onSelect(image)} data-image-name={image.imageName}>
 					<td class="px-4 py-3 whitespace-nowrap">
 						<div class="text-sm font-medium text-white">{image.imageName}</div>
 						{#if image.metadata.htmlUrl}
@@ -50,6 +52,7 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								class="text-xs text-blue-400 hover:underline"
+								onclick={(e) => e.stopPropagation()}
 							>
 								View on {image.registryType}
 							</a>
@@ -59,6 +62,11 @@
 						<div class="text-sm text-gray-300 max-w-xs truncate">
 							{image.metadata.description || 'No description'}
 						</div>
+						{#if image.metadata.isPublic !== undefined || image.metadata.visibility}
+							<div class="text-xs text-gray-400 mt-1">
+								Visibility: {image.metadata.visibility || (image.metadata.isPublic ? 'public' : 'private')}
+							</div>
+						{/if}
 					</td>
 					<td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400">
 						{formatDate(image.lastUpdated)}

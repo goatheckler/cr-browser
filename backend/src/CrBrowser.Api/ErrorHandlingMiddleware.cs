@@ -20,6 +20,16 @@ public class ErrorHandlingMiddleware
         {
             await _next(context);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access");
+            await HandleUnauthorizedExceptionAsync(context, ex);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Resource not found");
+            await HandleNotFoundExceptionAsync(context, ex);
+        }
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "HTTP request exception occurred");
@@ -35,6 +45,18 @@ public class ErrorHandlingMiddleware
             _logger.LogError(ex, "Unhandled exception occurred");
             await HandleUnhandledExceptionAsync(context, ex);
         }
+    }
+
+    private static async Task HandleUnauthorizedExceptionAsync(HttpContext context, UnauthorizedAccessException exception)
+    {
+        var response = new ErrorResponse("AuthenticationFailed", exception.Message, false);
+        await WriteJsonResponseAsync(context, response, 401);
+    }
+
+    private static async Task HandleNotFoundExceptionAsync(HttpContext context, KeyNotFoundException exception)
+    {
+        var response = new ErrorResponse("NotFound", exception.Message, false);
+        await WriteJsonResponseAsync(context, response, 404);
     }
 
     private static async Task HandleHttpRequestExceptionAsync(HttpContext context, HttpRequestException exception)

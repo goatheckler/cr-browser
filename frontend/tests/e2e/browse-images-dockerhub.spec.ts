@@ -16,7 +16,7 @@ test('browsing Docker Hub library namespace shows images', async ({ page }) => {
   await dialog.getByPlaceholder(/owner|namespace/i).fill('library');
   await dialog.getByRole('button', { name: /load|browse/i }).click();
   
-  await expect(page.getByText(/loading/i)).toBeVisible();
+  await expect(dialog.getByText('Loading images...')).toBeVisible();
   
   const imageList = page.locator('[data-testid="image-list"]');
   await expect(imageList).toBeVisible({ timeout: 10000 });
@@ -24,7 +24,7 @@ test('browsing Docker Hub library namespace shows images', async ({ page }) => {
   const rows = imageList.locator('tbody tr');
   await expect(rows.count()).resolves.toBeGreaterThan(5);
   
-  await expect(page.getByText(/nginx/i)).toBeVisible();
+  await expect(imageList.getByText('nginx', { exact: true })).toBeVisible();
 });
 
 test('filtering Docker Hub images works', async ({ page }) => {

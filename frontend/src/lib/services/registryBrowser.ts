@@ -95,8 +95,10 @@ export async function loadImages(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorName = error instanceof Error ? error.name : '';
     let errorCode: string = ERROR_CODES.UNKNOWN;
     let retryable = true;
+    let displayMessage = errorMessage;
 
     if (errorMessage.includes('not found') || errorMessage.includes('404')) {
       errorCode = ERROR_CODES.NOT_FOUND;
@@ -107,8 +109,9 @@ export async function loadImages(
     } else if (errorMessage.includes('Rate limit')) {
       errorCode = ERROR_CODES.RATE_LIMITED;
       retryable = true;
-    } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+    } else if (errorName === 'TypeError' || errorMessage.toLowerCase().includes('fetch')) {
       errorCode = ERROR_CODES.NETWORK_ERROR;
+      displayMessage = ERROR_MESSAGES.NETWORK_ERROR;
       retryable = true;
     }
 
@@ -117,7 +120,7 @@ export async function loadImages(
       status: 'error',
       error: {
         code: errorCode,
-        message: errorMessage,
+        message: displayMessage,
         retryable,
         rateLimitReset: null
       }
@@ -131,8 +134,6 @@ export async function loadNextPage(session: BrowseSession): Promise<BrowseSessio
   }
 
   try {
-    const updatedSession = { ...session, status: 'loading' as const };
-
     switch (session.registryType) {
       case 'DockerHub': {
         if (!session.pagination.nextPageUrl) {
@@ -146,7 +147,7 @@ export async function loadNextPage(session: BrowseSession): Promise<BrowseSessio
         );
 
         return {
-          ...updatedSession,
+          ...session,
           images: [...session.images, ...result.repositories],
           pagination: {
             ...session.pagination,

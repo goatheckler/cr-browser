@@ -16,7 +16,7 @@ test('selecting Docker Hub image populates main form', async ({ page }) => {
   const imageList = page.locator('[data-testid="image-list"]');
   await expect(imageList).toBeVisible({ timeout: 10000 });
   
-  const nginxRow = page.getByText('nginx').first();
+  const nginxRow = page.locator('tr[data-image-name="nginx"]');
   await nginxRow.click();
   
   await expect(dialog).not.toBeVisible({ timeout: 5000 });
@@ -44,10 +44,12 @@ test('selecting image triggers tag load', async ({ page }) => {
   const imageList = page.locator('[data-testid="image-list"]');
   await expect(imageList).toBeVisible({ timeout: 10000 });
   
-  const nginxRow = page.getByText('nginx').first();
+  const nginxRow = page.locator('tr[data-image-name="nginx"]');
   await nginxRow.click();
   
   await expect(page.getByText(/loading.*tags|found.*tag/i)).toBeVisible({ timeout: 5000 });
+  
+  await page.waitForSelector('.ag-center-cols-container .ag-row', { timeout: 10000 });
   
   const tagRows = page.locator('.ag-center-cols-container .ag-row');
   await expect(tagRows.count()).resolves.toBeGreaterThan(0);

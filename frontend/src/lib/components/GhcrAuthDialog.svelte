@@ -2,12 +2,11 @@
 	import { ghcrCredential } from '$lib/stores/ghcrCredential';
 	import { createCredential, validateCredential, saveCredential, isTokenFormatValid } from '$lib/services/ghcrAuth';
 
-	export let open = false;
-	export let onSuccess: () => void;
+	let { open = $bindable(false), onSuccess }: { open?: boolean; onSuccess: () => void } = $props();
 
-	let tokenValue = '';
-	let isValidating = false;
-	let validationError = '';
+	let tokenValue = $state('');
+	let isValidating = $state(false);
+	let validationError = $state('');
 
 	async function handleSubmit() {
 		validationError = '';

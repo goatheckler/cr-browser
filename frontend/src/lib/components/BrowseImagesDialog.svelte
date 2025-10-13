@@ -7,24 +7,28 @@
 	import ImageListTable from './ImageListTable.svelte';
 	import GhcrAuthDialog from './GhcrAuthDialog.svelte';
 
-	export let open = false;
-	export let registryType: RegistryType;
-	export let ownerOrProjectId: string;
-	export let onImageSelected: (image: ImageListing) => void;
+	let { open = $bindable(false), registryType, ownerOrProjectId, onImageSelected }: { 
+		open?: boolean; 
+		registryType: RegistryType; 
+		ownerOrProjectId: string; 
+		onImageSelected: (image: ImageListing) => void 
+	} = $props();
 
-	let showGhcrAuth = false;
-	let filterText = '';
-	let isLoadingMore = false;
-	let localOwner = ownerOrProjectId || '';
+	let showGhcrAuth = $state(false);
+	let filterText = $state('');
+	let isLoadingMore = $state(false);
+	let localOwner = $state(ownerOrProjectId || '');
 
-	$: if (open) {
-		localOwner = ownerOrProjectId || '';
-		if (registryType === 'GHCR' && !$ghcrCredential) {
-			showGhcrAuth = true;
+	$effect(() => {
+		if (open) {
+			localOwner = ownerOrProjectId || '';
+			if (registryType === 'GHCR' && !$ghcrCredential) {
+				showGhcrAuth = true;
+			}
 		}
-	}
+	});
 
-	$: filteredImages = $browseSession ? getFilteredImages($browseSession) : [];
+	let filteredImages = $derived($browseSession ? getFilteredImages($browseSession) : []);
 
 	async function handleBrowse() {
 		if (!localOwner) return;
@@ -63,6 +67,16 @@
 			browseSession.set(session);
 		} catch (err) {
 			console.error('Failed to load images:', err);
+			browseSession.update((s) => s ? { 
+				...s, 
+				status: 'error', 
+				error: { 
+					code: 'LOAD_ERROR',
+					message: err instanceof Error ? err.message : 'Unknown error',
+					retryable: true,
+					rateLimitReset: null
+				} 
+			} : null);
 		}
 	}
 
@@ -91,6 +105,15 @@
 			console.error('Failed to load more images:', err);
 		} finally {
 			isLoadingMore = false;
+		}
+	}
+
+	function handleScroll(event: Event) {
+		const target = event.target as HTMLElement;
+		const scrolledToBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 50;
+		
+		if (scrolledToBottom && $browseSession?.pagination.hasMore && !isLoadingMore) {
+			handleLoadMore();
 		}
 	}
 
@@ -133,7 +156,7 @@
 						disabled={!localOwner || $browseSession?.status === 'loading'}
 						class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed"
 					>
-						{$browseSession?.status === 'loading' ? 'Loading...' : 'Browse'}
+						{$browseSession?.status === 'loading' ? 'Browsing...' : 'Browse'}
 					</button>
 				</div>
 				
@@ -148,37 +171,49 @@
 				{/if}
 			</div>
 
-			<div class="flex-1 overflow-auto px-6 py-4">
-				{#if $browseSession?.status === 'loading'}
-					<div class="flex items-center justify-center py-12">
-						<div class="text-gray-400">Loading images...</div>
+		<div class="flex-1 overflow-auto px-6 py-4" onscroll={handleScroll} data-testid="scrollable-container">
+			{#if $browseSession?.status === 'loading'}
+				<div class="flex items-center justify-center py-12" data-testid="loading-state">
+					<div class="text-gray-400">Loading images...</div>
+				</div>
+			{:else if $browseSession?.status === 'error'}
+				<div class="flex flex-col items-center justify-center py-12 gap-4">
+					<div class="text-red-400" data-testid="error-message">
+						Error: {$browseSession.error?.message || 'Failed to load images'}
 					</div>
-				{:else if $browseSession?.status === 'error'}
-					<div class="flex items-center justify-center py-12">
-						<div class="text-red-400">
-							Error: {$browseSession.error?.message || 'Failed to load images'}
-						</div>
-					</div>
-				{:else if filteredImages.length === 0 && $browseSession?.status === 'loaded'}
-					<div class="flex items-center justify-center py-12">
-						<div class="text-gray-400">No images found</div>
-					</div>
-				{:else if filteredImages.length > 0}
-					<ImageListTable images={filteredImages} onSelect={handleImageSelect} />
-					
-					{#if $browseSession?.pagination.hasMore}
-						<div class="mt-4 text-center">
-							<button
-								onclick={handleLoadMore}
-								disabled={isLoadingMore}
-								class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed"
-							>
-								{isLoadingMore ? 'Loading...' : 'Load More'}
-							</button>
-						</div>
+					{#if $browseSession.error?.retryable}
+						<button
+							onclick={handleBrowse}
+							class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+						>
+							Retry
+						</button>
 					{/if}
+				</div>
+			{:else if $browseSession?.status === 'loaded' && filteredImages.length > 0}
+				<ImageListTable images={filteredImages} onSelect={handleImageSelect} />
+				
+				{#if isLoadingMore}
+					<div class="mt-4 text-center text-gray-400" data-testid="loading-more-indicator">
+						Loading More Images...
+					</div>
+				{:else if $browseSession?.pagination.hasMore}
+					<div class="mt-4 text-center">
+						<button
+							onclick={handleLoadMore}
+							disabled={isLoadingMore}
+							class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed"
+						>
+							{isLoadingMore ? 'Loading More...' : 'Load More'}
+						</button>
+					</div>
 				{/if}
-			</div>
+			{:else if $browseSession?.status === 'loaded' && filteredImages.length === 0}
+				<div class="flex items-center justify-center py-12">
+					<div class="text-gray-400">No images found</div>
+				</div>
+			{/if}
+		</div>
 		</div>
 	</div>
 {/if}
