@@ -51,8 +51,8 @@
 
 {#if open}
 	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-		<div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
-			<h2 class="text-xl font-semibold mb-4 text-white">GHCR Authentication Required</h2>
+		<div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6" role="dialog" aria-modal="true" aria-labelledby="ghcr-auth-title">
+			<h2 id="ghcr-auth-title" class="text-xl font-semibold mb-4 text-white">GHCR Authentication Required</h2>
 			
 			<p class="text-sm text-gray-300 mb-4">
 				GitHub Container Registry requires authentication. Please provide a GitHub Personal Access Token with <code class="bg-gray-700 px-1 rounded text-gray-200">read:packages</code> scope.
@@ -104,7 +104,7 @@
 						disabled={isValidating || !tokenValue}
 						class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed"
 					>
-						{isValidating ? 'Validating...' : 'Authenticate'}
+						{isValidating ? 'Validating...' : 'Continue'}
 					</button>
 				</div>
 			</form>

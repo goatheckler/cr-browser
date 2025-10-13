@@ -8,6 +8,8 @@
   import RegistrySelector from './RegistrySelector.svelte';
   import BrowseImagesDialog from '$lib/components/BrowseImagesDialog.svelte';
   import type { ImageListing } from '$lib/types/browse';
+  import { ghcrCredential } from '$lib/stores/ghcrCredential';
+  import { clearCredential } from '$lib/services/ghcrAuth';
   
   let owner = $state('');
   let image = $state('');
@@ -215,6 +217,11 @@
     return map[registry] || 'GHCR';
   }
 
+  function handleClearToken() {
+    clearCredential();
+    ghcrCredential.clear();
+  }
+
 </script>
 
 <div class="min-h-screen bg-background text-white p-6 space-y-6" bind:this={pageContainer}>
@@ -237,6 +244,9 @@
   <section class="space-y-2">
     <div class="flex gap-2 items-center flex-wrap">
       <RegistrySelector bind:registry onchange={handleRegistryChange} />
+      {#if registry === 'ghcr' && $ghcrCredential}
+        <button onclick={handleClearToken} class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">Clear Token</button>
+      {/if}
       <input placeholder={registry === 'gcr' ? 'project-id' : 'owner'} bind:value={owner} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" onkeydown={onKey} />
       <button onclick={() => showBrowseDialog = true} class="px-3 py-1 bg-surface hover:bg-surface/80 rounded border border-primary">Browse Images</button>
       <input placeholder="image" bind:value={image} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" onkeydown={onKey} />

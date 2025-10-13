@@ -19,6 +19,9 @@
 
 	$: if (open) {
 		localOwner = ownerOrProjectId || '';
+		if (registryType === 'GHCR' && !$ghcrCredential) {
+			showGhcrAuth = true;
+		}
 	}
 
 	$: filteredImages = $browseSession ? getFilteredImages($browseSession) : [];
