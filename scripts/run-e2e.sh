@@ -11,13 +11,19 @@ FRONTEND_DIR="$ROOT_DIR/frontend"
 PORT_FRONTEND=5173
 PORT_BACKEND=5214
 
+# Kill any existing processes on our ports before starting
+echo "[pre-cleanup] Killing any existing processes on ports $PORT_BACKEND and $PORT_FRONTEND" >&2
+lsof -ti:$PORT_BACKEND | xargs -r kill -9 2>/dev/null || true
+lsof -ti:$PORT_FRONTEND | xargs -r kill -9 2>/dev/null || true
+sleep 1
+
 cleanup() {
   echo "[cleanup] Stopping background processes" >&2
-  # Kill all background jobs spawned by this script
-  jobs -p | xargs -r kill 2>/dev/null || true
+  # Force kill all background jobs spawned by this script
+  jobs -p | xargs -r kill -9 2>/dev/null || true
   # Also try specific PIDs if captured
-  [[ -n "${BACKEND_PID:-}" ]] && kill $BACKEND_PID 2>/dev/null || true
-  [[ -n "${FRONTEND_PID:-}" ]] && kill $FRONTEND_PID 2>/dev/null || true
+  [[ -n "${BACKEND_PID:-}" ]] && kill -9 $BACKEND_PID 2>/dev/null || true
+  [[ -n "${FRONTEND_PID:-}" ]] && kill -9 $FRONTEND_PID 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -41,11 +47,11 @@ done
 echo "[frontend] Installing deps (if needed)" >&2
 (cd "$FRONTEND_DIR" && npm install)
 
-# Ensure playwright browser is installed
-(cd "$FRONTEND_DIR" && npx playwright install --with-deps chromium || true)
+# Ensure playwright browser is installed (without system deps to avoid sudo)
+(cd "$FRONTEND_DIR" && npx playwright install chromium)
 
 echo "[frontend] Starting dev server" >&2
-(cd "$FRONTEND_DIR" && npm run dev &)
+(cd "$FRONTEND_DIR" && npm run dev) &
 FRONTEND_PID=$!
 
 for i in {1..30}; do

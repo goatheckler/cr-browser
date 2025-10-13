@@ -6,6 +6,10 @@
   import type { GridApi, GridOptions, ColDef } from 'ag-grid-community';
   import { Grid } from 'ag-grid-community';
   import RegistrySelector from './RegistrySelector.svelte';
+  import BrowseImagesDialog from '$lib/components/BrowseImagesDialog.svelte';
+  import type { ImageListing } from '$lib/types/browse';
+  import { ghcrCredential } from '$lib/stores/ghcrCredential';
+  import { clearCredential } from '$lib/services/ghcrAuth';
   
   let owner = $state('');
   let image = $state('');
@@ -13,6 +17,7 @@
   let tags = $state<string[]>([]);
   let copied = $state<string | null>(null);
   let copyTimer = $state<ReturnType<typeof setTimeout> | null>(null);
+  let showBrowseDialog = $state(false);
   let health = $state<{ status: string; uptimeSeconds: number } | null>(null);
   let loadingHealth = $state(true);
   let loadingTags = $state(false);
@@ -193,6 +198,33 @@
       gridCreated = true;
     }
   }
+
+  async function handleImageSelected(selectedImage: ImageListing) {
+    owner = selectedImage.owner;
+    image = selectedImage.imageName;
+    registry = selectedImage.registryType.toLowerCase();
+    showBrowseDialog = false;
+    searched = true;
+    maybeCreateGrid();
+    await tick();
+    await fetchTags();
+  }
+
+  function getRegistryType(): 'GHCR' | 'DockerHub' | 'Quay' | 'GCR' {
+    const map: Record<string, 'GHCR' | 'DockerHub' | 'Quay' | 'GCR'> = {
+      ghcr: 'GHCR',
+      dockerhub: 'DockerHub',
+      quay: 'Quay',
+      gcr: 'GCR'
+    };
+    return map[registry] || 'GHCR';
+  }
+
+  function handleClearToken() {
+    clearCredential();
+    ghcrCredential.clear();
+  }
+
 </script>
 
 <div class="min-h-screen bg-background text-white p-6 space-y-6" bind:this={pageContainer}>
@@ -215,10 +247,19 @@
   <section class="space-y-2">
     <div class="flex gap-2 items-center flex-wrap">
       <RegistrySelector bind:registry onchange={handleRegistryChange} />
-      <input placeholder="owner" bind:value={owner} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" on:keydown={onKey} />
-      <input placeholder="image" bind:value={image} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" on:keydown={onKey} />
-      <button on:click={submit} class="px-3 py-1 bg-primary hover:bg-primary/80 rounded disabled:opacity-50" disabled={loadingTags}>Search</button>
+      {#if registry === 'ghcr' && $ghcrCredential}
+        <button onclick={handleClearToken} class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">Clear Token</button>
+      {/if}
+      <label for="owner-input" class="text-sm text-gray-300">{registry === 'gcr' ? 'Project ID' : 'Owner'}:</label>
+      <input id="owner-input" placeholder={registry === 'gcr' ? 'project-id' : 'owner'} bind:value={owner} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" onkeydown={onKey} />
+      <button onclick={() => showBrowseDialog = true} class="px-3 py-1 bg-surface hover:bg-surface/80 rounded border border-primary">Browse Images</button>
+      <label for="image-input" class="text-sm text-gray-300">Image:</label>
+      <input id="image-input" placeholder="image" bind:value={image} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" onkeydown={onKey} />
+      <button onclick={submit} class="px-3 py-1 bg-primary hover:bg-primary/80 rounded disabled:opacity-50" disabled={loadingTags}>Search</button>
     </div>
+    {#if registry === 'gcr'}
+      <div class="text-sm text-gray-400">Project ID format: lowercase alphanumeric with hyphens (e.g., google-containers)</div>
+    {/if}
     {#if error}
       <div class="text-red-400 text-sm">{error}</div>
     {/if}
@@ -236,3 +277,10 @@
     </div>
   </section>
 </div>
+
+<BrowseImagesDialog 
+  bind:open={showBrowseDialog} 
+  registryType={getRegistryType()} 
+  ownerOrProjectId={owner} 
+  onImageSelected={handleImageSelected} 
+/>

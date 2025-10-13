@@ -4,10 +4,10 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure JSON serialization options globally (camelCase for enums)
+// Configure JSON serialization options globally (preserve enum names exactly as defined)
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
 builder.Services.AddSingleton<IValidationService, ValidationService>();
@@ -83,6 +83,48 @@ app.MapGet("/api/openapi.yaml", () =>
 
 // Configure JSON serialization (camelCase)
 app.Use(async (ctx, next) => { ctx.Response.Headers["X-App"] = "cr-browser"; await next(); });
+
+app.MapGet("/api/registries/{registryType}/{owner}/images", async (
+    string registryType,
+    string owner,
+    int pageSize = 25,
+    string? nextPageUrl = null,
+    IValidationService validator = null!,
+    IRegistryFactory factory = null!,
+    HttpContext httpContext = null!,
+    CancellationToken ct = default) =>
+{
+    if (!Enum.TryParse<RegistryType>(registryType, ignoreCase: true, out var type))
+    {
+        return Results.Json(new ErrorResponse("InvalidRegistryType", $"Invalid registry type: {registryType}", false), statusCode: 400);
+    }
+
+    if (pageSize < 1 || pageSize > 100)
+    {
+        return Results.Json(new ErrorResponse("InvalidPageSize", "PageSize must be between 1 and 100", false), statusCode: 400);
+    }
+
+    var client = factory.CreateClient(type);
+    
+    string? authToken = null;
+    if (httpContext.Request.Headers.TryGetValue("Authorization", out var authHeader))
+    {
+        var authValue = authHeader.ToString();
+        if (authValue.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            authToken = authValue.Substring(7);
+        }
+    }
+
+    var result = await client.ListImagesAsync(owner, pageSize, authToken, nextPageUrl, ct);
+    
+    return Results.Json(new
+    {
+        images = result.Images,
+        totalCount = result.TotalCount,
+        nextPageUrl = result.NextPageUrl
+    });
+});
 
 // New multi-registry endpoint
 app.MapGet("/api/registries/{registryType}/{owner}/{image}/tags", async (

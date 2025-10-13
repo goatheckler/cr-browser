@@ -60,4 +60,69 @@ public sealed class DockerHubClient : OciRegistryClientBase
         var repo = FormatRepositoryPath(owner, image);
         return $"docker.io/{repo}:{tag}";
     }
+
+    public async override Task<BrowseImagesResponse> ListImagesAsync(
+        string owner,
+        int pageSize,
+        string? authToken = null,
+        string? nextPageUrl = null,
+        CancellationToken ct = default)
+    {
+        var url = nextPageUrl ?? $"https://hub.docker.com/v2/repositories/{owner}/?page_size={Math.Min(pageSize, 100)}";
+
+        using var hubClient = new HttpClient();
+        hubClient.DefaultRequestHeaders.UserAgent.ParseAdd("cr-browser/0.0.1");
+        
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        var resp = await hubClient.SendAsync(req, ct);
+        
+        if (!resp.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Docker Hub API request failed with status {StatusCode} for namespace {Owner}", resp.StatusCode, owner);
+            return new BrowseImagesResponse(Array.Empty<ImageListing>(), null, null);
+        }
+
+        var content = await resp.Content.ReadAsStringAsync(ct);
+        using var doc = JsonDocument.Parse(content);
+        
+        var images = new List<ImageListing>();
+        if (doc.RootElement.TryGetProperty("results", out var results))
+        {
+            foreach (var repo in results.EnumerateArray())
+            {
+                var name = repo.GetProperty("name").GetString() ?? "";
+                var ns = repo.TryGetProperty("namespace", out var nsProp) 
+                    ? nsProp.GetString() ?? owner 
+                    : owner;
+                
+                var lastUpdated = repo.TryGetProperty("last_updated", out var updated) 
+                    ? DateTime.Parse(updated.GetString()!) 
+                    : (DateTime?)null;
+                
+                var description = repo.TryGetProperty("description", out var desc) ? desc.GetString() : null;
+                var starCount = repo.TryGetProperty("star_count", out var stars) ? stars.GetInt64() : (long?)null;
+                var pullCount = repo.TryGetProperty("pull_count", out var pulls) ? pulls.GetInt64() : (long?)null;
+
+                images.Add(new ImageListing(
+                    ns,
+                    name,
+                    RegistryType.DockerHub,
+                    lastUpdated,
+                    null,
+                    new ImageMetadata(
+                        Description: description,
+                        StarCount: starCount,
+                        PullCount: pullCount
+                    )
+                ));
+            }
+        }
+
+        var totalCount = doc.RootElement.TryGetProperty("count", out var count) ? count.GetInt32() : (int?)null;
+        var next = doc.RootElement.TryGetProperty("next", out var nextProp) && nextProp.ValueKind != JsonValueKind.Null
+            ? nextProp.GetString() 
+            : null;
+
+        return new BrowseImagesResponse(images.ToArray(), totalCount, next);
+    }
 }

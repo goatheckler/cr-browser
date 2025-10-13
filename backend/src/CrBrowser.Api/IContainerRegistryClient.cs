@@ -13,5 +13,12 @@ public interface IContainerRegistryClient
         string? last, 
         CancellationToken ct = default);
     
+    Task<BrowseImagesResponse> ListImagesAsync(
+        string owner,
+        int pageSize,
+        string? authToken = null,
+        string? nextPageUrl = null,
+        CancellationToken ct = default);
+    
     string FormatFullReference(string owner, string image, string tag);
 }

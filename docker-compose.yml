@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    image: thefnordling/cr-browser-backend:latest
+    image: cr-browser-backend:latest
     container_name: cr-browser-backend
     ports:
       - "5214:8080"
@@ -18,7 +18,7 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    image: thefnordling/cr-browser-frontend:latest
+    image: cr-browser-frontend:latest
     container_name: cr-browser-frontend
     depends_on:
       backend:

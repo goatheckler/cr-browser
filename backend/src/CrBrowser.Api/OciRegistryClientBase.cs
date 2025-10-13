@@ -27,6 +27,13 @@ public abstract class OciRegistryClientBase : IContainerRegistryClient
 
     public abstract string FormatFullReference(string owner, string image, string tag);
 
+    public abstract Task<BrowseImagesResponse> ListImagesAsync(
+        string owner,
+        int pageSize,
+        string? authToken = null,
+        string? nextPageUrl = null,
+        CancellationToken ct = default);
+
     private sealed record TagListResponse(List<string> Tags, string? Name = null);
 
     public async Task<RegistryResponse> ListTagsPageAsync(

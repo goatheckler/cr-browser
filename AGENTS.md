@@ -5,6 +5,8 @@ Auto-generated from all feature plans. Last updated: 2025-10-12
 ## Active Technologies
 - Backend C# (.NET 8), Frontend SvelteKit (Node 20) + HTTP client (System.Net.Http), JSON serialization (System.Text.Json), SvelteKit, Tailwind CSS, ag-grid (community), clipboard API
 - Multi-registry support (GHCR, Docker Hub, Quay, GCR) + OCI Distribution Specification
+- Frontend: TypeScript (SvelteKit, Node 20), Backend: C# (.NET 8) + SvelteKit, Tailwind CSS, ag-grid (community), existing System.Net.Http backend (003-owner-image-browser)
+- Browser localStorage for GHCR GitHub PAT (client-side only) (003-owner-image-browser)
 
 ## Project Structure
 ```
@@ -38,6 +40,7 @@ Safe alternatives:
 - Use existing scripts/tools that don't require elevation
 
 ## Recent Changes
+- 003-owner-image-browser: Added Frontend: TypeScript (SvelteKit, Node 20), Backend: C# (.NET 8) + SvelteKit, Tailwind CSS, ag-grid (community), existing System.Net.Http backend
 - 002-multi-registry-support: Added multi-registry support (Docker Hub, Quay.io, GCR) with OCI Distribution Specification compliance
 - 001: Added Backend C# (.NET 8), Frontend SvelteKit (Node 20) + HTTP client (System.Net.Http), JSON serialization (System.Text.Json), SvelteKit, Tailwind CSS, ag-grid (community), clipboard API
 

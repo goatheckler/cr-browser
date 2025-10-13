@@ -87,4 +87,14 @@ public sealed class GcrClient : IContainerRegistryClient
         var repo = FormatRepositoryPath(owner, image);
         return $"gcr.io/{repo}:{tag}";
     }
+
+    public Task<BrowseImagesResponse> ListImagesAsync(
+        string owner,
+        int pageSize,
+        string? authToken = null,
+        string? nextPageUrl = null,
+        CancellationToken ct = default)
+    {
+        return Task.FromResult(new BrowseImagesResponse(Array.Empty<ImageListing>(), 0, null));
+    }
 }

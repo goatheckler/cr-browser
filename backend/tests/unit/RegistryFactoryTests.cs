@@ -61,6 +61,20 @@ public class RegistryFactoryTests
             ));
         }
 
+        public Task<CrBrowser.Api.BrowseImagesResponse> ListImagesAsync(
+            string owner, 
+            int pageSize, 
+            string? authToken = null, 
+            string? nextPageUrl = null, 
+            CancellationToken ct = default)
+        {
+            return Task.FromResult(new CrBrowser.Api.BrowseImagesResponse(
+                Array.Empty<CrBrowser.Api.ImageListing>(), 
+                null, 
+                null
+            ));
+        }
+
         public string FormatFullReference(string owner, string image, string tag)
         {
             return $"{BaseUrl}/{owner}/{image}:{tag}";
@@ -84,6 +98,20 @@ public class RegistryFactoryTests
                 NotFound: false,
                 Retryable: false,
                 HasMore: false
+            ));
+        }
+
+        public Task<CrBrowser.Api.BrowseImagesResponse> ListImagesAsync(
+            string owner, 
+            int pageSize, 
+            string? authToken = null, 
+            string? nextPageUrl = null, 
+            CancellationToken ct = default)
+        {
+            return Task.FromResult(new CrBrowser.Api.BrowseImagesResponse(
+                Array.Empty<CrBrowser.Api.ImageListing>(), 
+                null, 
+                null
             ));
         }
 
@@ -113,6 +141,20 @@ public class RegistryFactoryTests
             ));
         }
 
+        public Task<CrBrowser.Api.BrowseImagesResponse> ListImagesAsync(
+            string owner, 
+            int pageSize, 
+            string? authToken = null, 
+            string? nextPageUrl = null, 
+            CancellationToken ct = default)
+        {
+            return Task.FromResult(new CrBrowser.Api.BrowseImagesResponse(
+                Array.Empty<CrBrowser.Api.ImageListing>(), 
+                null, 
+                null
+            ));
+        }
+
         public string FormatFullReference(string owner, string image, string tag)
         {
             return $"{BaseUrl}/{owner}/{image}:{tag}";
@@ -136,6 +178,20 @@ public class RegistryFactoryTests
                 NotFound: false,
                 Retryable: false,
                 HasMore: false
+            ));
+        }
+
+        public Task<CrBrowser.Api.BrowseImagesResponse> ListImagesAsync(
+            string owner, 
+            int pageSize, 
+            string? authToken = null, 
+            string? nextPageUrl = null, 
+            CancellationToken ct = default)
+        {
+            return Task.FromResult(new CrBrowser.Api.BrowseImagesResponse(
+                Array.Empty<CrBrowser.Api.ImageListing>(), 
+                null, 
+                null
             ));
         }
 
