@@ -22,7 +22,7 @@ export const REGISTRY_CONFIG = {
     requiresAuth: true,
     tokenPrefix: 'ghp_',
     minTokenLength: 40,
-    requiredScopes: ['read:packages']
+    requiredScopes: ['read:packages'] as string[]
   },
   DockerHub: {
     name: 'Docker Hub',

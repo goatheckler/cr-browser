@@ -95,7 +95,7 @@ export async function loadImages(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    let errorCode = ERROR_CODES.UNKNOWN;
+    let errorCode: string = ERROR_CODES.UNKNOWN;
     let retryable = true;
 
     if (errorMessage.includes('not found') || errorMessage.includes('404')) {
