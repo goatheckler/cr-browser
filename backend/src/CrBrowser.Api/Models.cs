@@ -74,7 +74,6 @@ public sealed class ValidationService : IValidationService
     }
 }
 
-// Removed legacy Tag / TagPage / Truncation models in simplified tags-only API.
 public record ErrorResponse(string Code, string Message, bool Retryable);
 
 public record RegistryRequest(
@@ -83,4 +82,31 @@ public record RegistryRequest(
     [Required] [RegularExpression(@"^[a-z0-9]+(?:[._-][a-z0-9]+)*$")] string Image,
     [Range(1, int.MaxValue)] int Page = 1,
     [Range(1, 100)] int PageSize = 10
+);
+
+public record ImageListing(
+    string Owner,
+    string ImageName,
+    RegistryType RegistryType,
+    DateTime? LastUpdated,
+    DateTime? CreatedAt,
+    ImageMetadata Metadata
+);
+
+public record ImageMetadata(
+    string? Description = null,
+    long? StarCount = null,
+    long? PullCount = null,
+    bool? IsPublic = null,
+    string? RepositoryState = null,
+    long? PackageId = null,
+    string? Visibility = null,
+    string? HtmlUrl = null,
+    string? ProjectId = null
+);
+
+public record BrowseImagesResponse(
+    ImageListing[] Images,
+    int? TotalCount,
+    string? NextPageUrl
 );
