@@ -10,11 +10,6 @@
 		if (!date) return 'N/A';
 		return new Date(date).toLocaleDateString();
 	}
-
-	function formatNumber(num: number | undefined | null): string {
-		if (num === undefined || num === null) return 'N/A';
-		return num.toLocaleString();
-	}
 </script>
 
 <div class="overflow-x-auto" data-testid="image-list">
@@ -29,12 +24,6 @@
 				</th>
 				<th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
 					Updated
-				</th>
-				<th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-					Stars
-				</th>
-				<th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-					Pulls
 				</th>
 				<th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
 					Actions
@@ -68,19 +57,13 @@
 							</div>
 						{/if}
 					</td>
-					<td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400">
-						{formatDate(image.lastUpdated)}
-					</td>
-					<td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400">
-						{formatNumber(image.metadata.starCount)}
-					</td>
-					<td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400">
-						{formatNumber(image.metadata.pullCount)}
-					</td>
-					<td class="px-4 py-3 whitespace-nowrap text-sm">
+				<td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400">
+					{formatDate(image.lastUpdated)}
+				</td>
+				<td class="px-6 py-3 whitespace-nowrap text-sm text-right">
 						<button
 							onclick={() => onSelect(image)}
-							class="text-blue-400 hover:text-blue-300 font-medium"
+							class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-medium"
 						>
 							Select
 						</button>

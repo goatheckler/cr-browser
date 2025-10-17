@@ -22,7 +22,8 @@ public class RegistryTypeContractTests
         Assert.Contains("DockerHub", values);
         Assert.Contains("Quay", values);
         Assert.Contains("Gcr", values);
-        Assert.Equal(4, values.Length);
+        Assert.Contains("Custom", values);
+        Assert.Equal(5, values.Length);
     }
 
     [Theory]
@@ -30,6 +31,7 @@ public class RegistryTypeContractTests
     [InlineData("DockerHub", "dockerHub")]
     [InlineData("Quay", "quay")]
     [InlineData("Gcr", "gcr")]
+    [InlineData("Custom", "custom")]
     public void RegistryType_Should_Serialize_As_Lowercase_String(string enumValue, string expectedJson)
     {
         var enumType = typeof(CrBrowser.Api.RegistryType);
@@ -45,6 +47,7 @@ public class RegistryTypeContractTests
     [InlineData("\"dockerHub\"", "DockerHub")]
     [InlineData("\"quay\"", "Quay")]
     [InlineData("\"gcr\"", "Gcr")]
+    [InlineData("\"custom\"", "Custom")]
     public void RegistryType_Should_Deserialize_From_Lowercase_String(string json, string expectedEnumValue)
     {
         var enumType = typeof(CrBrowser.Api.RegistryType);

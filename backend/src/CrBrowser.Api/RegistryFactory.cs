@@ -18,12 +18,18 @@ public sealed class RegistryFactory : IRegistryFactory
             RegistryType.Ghcr,
             RegistryType.DockerHub,
             RegistryType.Quay,
-            RegistryType.Gcr
+            RegistryType.Gcr,
+            RegistryType.Custom
         };
     }
 
     public IContainerRegistryClient CreateClient(RegistryType registryType)
     {
+        if (registryType == RegistryType.Custom)
+        {
+            throw new InvalidOperationException("Custom registry requires base URL. Use CreateCustomClient instead.");
+        }
+
         if (!IsSupported(registryType))
         {
             throw new NotSupportedException($"Registry type '{registryType}' is not supported");
@@ -43,6 +49,22 @@ public sealed class RegistryFactory : IRegistryFactory
             RegistryType.Gcr => new GcrClient(_httpClientFactory.CreateClient("GcrClient")),
             _ => throw new NotSupportedException($"Registry type '{registryType}' is not supported")
         };
+    }
+
+    public IContainerRegistryClient CreateCustomClient(string baseUrl)
+    {
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new ArgumentException("Base URL cannot be empty", nameof(baseUrl));
+        }
+
+        var httpClient = _httpClientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri(baseUrl.TrimEnd('/'));
+        
+        return new CustomOciRegistryClient(
+            baseUrl, 
+            httpClient, 
+            _loggerFactory.CreateLogger<CustomOciRegistryClient>());
     }
 
     public IEnumerable<RegistryType> GetSupportedRegistries()

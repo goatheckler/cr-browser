@@ -10,10 +10,21 @@
   import type { ImageListing } from '$lib/types/browse';
   import { ghcrCredential } from '$lib/stores/ghcrCredential';
   import { clearCredential } from '$lib/services/ghcrAuth';
+  import { browseSession } from '$lib/stores/browseSession';
+  import { registryDetectionService } from '$lib/services/registryDetection';
   
   let owner = $state('');
   let image = $state('');
   let registry = $state('ghcr');
+  let customRegistryUrl = $state<string | undefined>(undefined);
+  let customRegistryValidated = $state(false);
+  let detectionResult = $state<{
+    normalizedUrl: string;
+    apiVersion: string | null;
+    error?: string;
+  } | null>(null);
+  let showDetectionResult = $state(false);
+  let detectingRegistry = $state(false);
   let tags = $state<string[]>([]);
   let copied = $state<string | null>(null);
   let copyTimer = $state<ReturnType<typeof setTimeout> | null>(null);
@@ -76,6 +87,9 @@
   }
 
   function getRegistryHost(registryType: string): string {
+    if (registryType === 'custom' && customRegistryUrl) {
+      return customRegistryUrl.replace(/^https?:\/\//, '');
+    }
     const registryHosts: Record<string, string> = {
       ghcr: 'ghcr.io',
       dockerhub: 'docker.io',
@@ -85,17 +99,81 @@
     return registryHosts[registryType] || 'ghcr.io';
   }
 
+  function getRegistryUrlDisplay(): string {
+    if (registry === 'custom') {
+      return customRegistryUrl || '';
+    }
+    return getRegistryHost(registry);
+  }
+
+  function handleRegistryUrlChange(e: Event) {
+    const input = e.target as HTMLInputElement;
+    customRegistryUrl = input.value;
+    customRegistryValidated = false;
+    owner = '';
+    image = '';
+  }
+
+  async function handleCheckRegistry() {
+    if (!customRegistryUrl?.trim()) {
+      return;
+    }
+    
+    detectingRegistry = true;
+    detectionResult = null;
+    
+    try {
+      const result = await registryDetectionService.detectRegistry(customRegistryUrl);
+      
+      if (result.supported && result.normalizedUrl) {
+        detectionResult = {
+          normalizedUrl: result.normalizedUrl,
+          apiVersion: result.apiVersion
+        };
+        customRegistryUrl = result.normalizedUrl;
+        customRegistryValidated = true;
+      } else {
+        detectionResult = {
+          normalizedUrl: customRegistryUrl,
+          apiVersion: null,
+          error: result.errorMessage || 'Registry not supported'
+        };
+        customRegistryValidated = false;
+      }
+      showDetectionResult = true;
+    } catch (err) {
+      detectionResult = {
+        normalizedUrl: customRegistryUrl,
+        apiVersion: null,
+        error: err instanceof Error ? err.message : 'Failed to detect registry'
+      };
+      customRegistryValidated = false;
+      showDetectionResult = true;
+    } finally {
+      detectingRegistry = false;
+    }
+  }
+
+  function closeDetectionResult() {
+    showDetectionResult = false;
+  }
+
   async function fetchTags() {
     error = null;
     loadingTags = true;
     tags = [];
+    rowData = [];
     copied = null;
     gridApi?.showLoadingOverlay();
     try {
       if (!owner || !image) {
         throw new Error('Owner and image required');
       }
-      const res = await fetch(`/api/registries/${registry}/${owner}/${image}/tags`);
+      const url = new URL(`/api/registries/${registry}/${owner}/${image}/tags`, window.location.origin);
+      if (customRegistryUrl) {
+        url.searchParams.set('customRegistryUrl', customRegistryUrl);
+      }
+      const res = await fetch(url);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.message || 'Tags fetch failed');
@@ -156,6 +234,12 @@
   });
 
   function handleRegistryChange() {
+    customRegistryValidated = false;
+    if (registry === 'custom') {
+      customRegistryUrl = '';
+      owner = '';
+      image = '';
+    }
     if (owner && image && searched) {
       fetchTags();
     }
@@ -203,6 +287,8 @@
     owner = selectedImage.owner;
     image = selectedImage.imageName;
     registry = selectedImage.registryType.toLowerCase();
+    customRegistryUrl = $browseSession?.customRegistryUrl;
+    customRegistryValidated = registry === 'custom' && !!customRegistryUrl;
     showBrowseDialog = false;
     searched = true;
     maybeCreateGrid();
@@ -210,12 +296,13 @@
     await fetchTags();
   }
 
-  function getRegistryType(): 'GHCR' | 'DockerHub' | 'Quay' | 'GCR' {
-    const map: Record<string, 'GHCR' | 'DockerHub' | 'Quay' | 'GCR'> = {
+  function getRegistryType(): 'GHCR' | 'DockerHub' | 'Quay' | 'GCR' | 'Custom' {
+    const map: Record<string, 'GHCR' | 'DockerHub' | 'Quay' | 'GCR' | 'Custom'> = {
       ghcr: 'GHCR',
       dockerhub: 'DockerHub',
       quay: 'Quay',
-      gcr: 'GCR'
+      gcr: 'GCR',
+      custom: 'Custom'
     };
     return map[registry] || 'GHCR';
   }
@@ -250,12 +337,59 @@
       {#if registry === 'ghcr' && $ghcrCredential}
         <button onclick={handleClearToken} class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">Clear Token</button>
       {/if}
+      <label for="registry-url-input" class="text-sm text-gray-300">Registry URL:</label>
+      <input 
+        id="registry-url-input" 
+        value={getRegistryUrlDisplay()} 
+        oninput={handleRegistryUrlChange}
+        readonly={registry !== 'custom'}
+        placeholder="docker.example.com"
+        class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary {registry !== 'custom' ? 'opacity-60' : ''}" 
+      />
+      <button 
+        onclick={handleCheckRegistry} 
+        disabled={registry !== 'custom' || customRegistryValidated || !customRegistryUrl || detectingRegistry}
+        data-testid="check-registry-button"
+        class="px-3 py-1 bg-surface hover:bg-surface/80 rounded border border-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+        title="Validate custom registry"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+        {detectingRegistry ? 'Checking...' : 'Check'}
+      </button>
       <label for="owner-input" class="text-sm text-gray-300">{registry === 'gcr' ? 'Project ID' : 'Owner'}:</label>
-      <input id="owner-input" placeholder={registry === 'gcr' ? 'project-id' : 'owner'} bind:value={owner} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" onkeydown={onKey} />
-      <button onclick={() => showBrowseDialog = true} class="px-3 py-1 bg-surface hover:bg-surface/80 rounded border border-primary">Browse Images</button>
+      <input 
+        id="owner-input" 
+        placeholder={registry === 'gcr' ? 'project-id' : 'owner'} 
+        bind:value={owner} 
+        disabled={registry === 'custom' && !customRegistryValidated}
+        class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed" 
+        onkeydown={onKey} 
+      />
+      <button 
+        onclick={() => showBrowseDialog = true} 
+        disabled={registry === 'custom' && !customRegistryValidated}
+        class="px-3 py-1 bg-surface hover:bg-surface/80 rounded border border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Browse Images
+      </button>
       <label for="image-input" class="text-sm text-gray-300">Image:</label>
-      <input id="image-input" placeholder="image" bind:value={image} class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary" onkeydown={onKey} />
-      <button onclick={submit} class="px-3 py-1 bg-primary hover:bg-primary/80 rounded disabled:opacity-50" disabled={loadingTags}>Search</button>
+      <input 
+        id="image-input" 
+        placeholder="image" 
+        bind:value={image} 
+        disabled={registry === 'custom' && !customRegistryValidated}
+        class="px-2 py-1 bg-surface border border-surface focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed" 
+        onkeydown={onKey} 
+      />
+      <button 
+        onclick={submit} 
+        disabled={loadingTags || (registry === 'custom' && !customRegistryValidated)}
+        class="px-3 py-1 bg-primary hover:bg-primary/80 rounded disabled:opacity-50"
+      >
+        Search
+      </button>
     </div>
     {#if registry === 'gcr'}
       <div class="text-sm text-gray-400">Project ID format: lowercase alphanumeric with hyphens (e.g., google-containers)</div>
@@ -281,6 +415,45 @@
 <BrowseImagesDialog 
   bind:open={showBrowseDialog} 
   registryType={getRegistryType()} 
-  ownerOrProjectId={owner} 
+  ownerOrProjectId={owner}
+  initialCustomRegistryUrl={customRegistryValidated ? customRegistryUrl : undefined}
   onImageSelected={handleImageSelected} 
 />
+
+<svelte:window onkeydown={(e) => { if (e.key === 'Escape' && showDetectionResult) closeDetectionResult(); }} />
+
+{#if showDetectionResult && detectionResult}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="presentation" onclick={closeDetectionResult}>
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl p-6" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()}>
+      {#if detectionResult.error}
+        <div class="space-y-4">
+          <h2 class="text-xl font-semibold text-red-400">✗ Registry Not Detected</h2>
+          <div class="bg-gray-900 rounded p-4 space-y-2">
+            <div><strong class="text-gray-300">URL:</strong> <span class="text-white">{detectionResult.normalizedUrl}</span></div>
+            <div><strong class="text-gray-300">Error:</strong> <span class="text-red-300">{detectionResult.error}</span></div>
+          </div>
+          <div class="flex justify-end">
+            <button onclick={closeDetectionResult} class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white">
+              Close
+            </button>
+          </div>
+        </div>
+      {:else}
+        <div class="space-y-4">
+          <h2 class="text-xl font-semibold text-green-400">✓ OCI Registry Detected</h2>
+          <div class="bg-gray-900 rounded p-4 space-y-2">
+            <div><strong class="text-gray-300">URL:</strong> <span class="text-white">{detectionResult.normalizedUrl}</span></div>
+            {#if detectionResult.apiVersion}
+              <div><strong class="text-gray-300">API Version:</strong> <span class="text-white">{detectionResult.apiVersion}</span></div>
+            {/if}
+          </div>
+          <div class="flex justify-end">
+            <button onclick={closeDetectionResult} class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white">
+              Close
+            </button>
+          </div>
+        </div>
+      {/if}
+    </div>
+  </div>
+{/if}

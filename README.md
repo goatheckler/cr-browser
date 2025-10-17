@@ -1,9 +1,17 @@
 # cr-browser
 
-Minimal web application to browse container registry image tags across multiple registries (GHCR, Docker Hub, Quay, GCR). Allows copying full image references to the clipboard.
+Minimal web application to browse container registry image tags across multiple registries (GHCR, Docker Hub, Quay, GCR, and custom OCI-compliant registries). Allows copying full image references to the clipboard.
 
 ## What It Does
-You enter a public GHCR image reference (`owner` and `image`). The app calls the backend which queries GHCR's tag list API (with an anonymous request and a follow‑up token attempt if required). It then displays all accessible tag names in a sortable/filterable grid. You can click a tag's full reference to copy `ghcr.io/owner/image:tag` to the clipboard.
+You select a registry (GHCR, Docker Hub, Quay, GCR, or Custom Registry) and enter an `owner` and `image` name. The app queries the registry's tag list API and displays all accessible tag names in a sortable/filterable grid. You can click a tag's full reference to copy it to the clipboard (e.g., `ghcr.io/owner/image:tag`).
+
+### Custom Registry Support
+For custom OCI-compliant registries (e.g., `docker.redpanda.com`):
+1. Select "Custom Registry" from the dropdown
+2. Click "Browse Images" to open the detection dialog
+3. Enter the registry URL (e.g., `docker.redpanda.com`)
+4. The system probes `/v2/` for OCI Distribution v2 compatibility
+5. If compatible, browse images and tags as normal
 
 Deliberately omitted in MVP: tag metadata (size, age, digest), pagination UI (backend keeps internally paging until exhaustion or safety cap), caching, retries/backoff, rate limit distinction, private repo auth UX, advanced accessibility refinements.
 
@@ -25,7 +33,9 @@ dotnet watch --project backend/src/CrBrowser.Api/CrBrowser.Api.csproj run
 Endpoints:
 - `GET /api/health` → `{ "status": "ok", "uptimeSeconds": <int> }`
 - `GET /api/openapi.yaml` → OpenAPI contract (static copy)
-- `GET /api/images/{owner}/{image}/tags` → `{ "tags": ["v1", "latest", ...] }` (no pagination or metadata)
+- `GET /api/registries/{type}/{owner}/images?customRegistryUrl=<url>` → List images
+- `GET /api/registries/{type}/{owner}/{image}/tags?customRegistryUrl=<url>` → `{ "tags": ["v1", "latest", ...] }`
+- `POST /api/registries/detect` → `{ "url": "<registry-url>" }` → Validate custom registry OCI compatibility
 
 ### Build Solution
 ```
@@ -55,10 +65,14 @@ For CORS-less local dev you can (a) proxy, or (b) start the backend first then s
 Typical flow:
 1. Backend: `dotnet run --project backend/src/CrBrowser.Api/CrBrowser.Api.csproj`
 2. Frontend: `npm run dev --prefix frontend`
-3. In browser: enter `owner` and `image` (e.g. `stefanprodan` and `podinfo`) then click Search.
+3. In browser: 
+   - Select a registry from the dropdown
+   - For custom registries, enter the URL when prompted (e.g., `docker.redpanda.com`)
+   - Enter `owner` and `image` (e.g., `stefanprodan` and `podinfo` for GHCR)
+   - Click "Browse Images" to see available images, or search directly if you know the image name
 4. Click a full reference to copy it. Status line shows copies and counts.
 
-See `specs/001-ghcr-browser-is/quickstart.md` for additional validation scenarios.
+See `specs/001-ghcr-browser-is/quickstart.md` for validation scenarios and `specs/004-redpanda-custom-registry/quickstart.md` for custom registry examples.
 
 ## Current Error Codes
 - `InvalidFormat` — Input not matching `owner/image` rules.

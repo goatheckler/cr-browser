@@ -1,0 +1,315 @@
+openapi: 3.1.0
+info:
+  title: Container Registry Browser API
+  version: 0.3.0
+  description: |
+    Multi-registry container tag browser API. Supports GitHub Container Registry (GHCR), 
+    Docker Hub, Quay.io, Google Container Registry, and custom OCI-compliant registries.
+    
+    Version 0.3.0 adds custom registry support with detection capabilities.
+
+servers:
+  - url: /api
+    description: API base path
+
+paths:
+  # Multi-registry endpoint with custom registry support
+  /registries/{registryType}/{owner}/{image}/tags:
+    get:
+      summary: List tags for an image on a specific registry
+      description: |
+        Returns tag names for a given image on the specified container registry.
+        For custom registries, include the `customRegistryUrl` query parameter.
+      operationId: listRegistryImageTags
+      tags:
+        - Tags
+      parameters:
+        - name: registryType
+          in: path
+          required: true
+          description: Container registry identifier
+          schema:
+            type: string
+            enum:
+              - ghcr
+              - dockerhub
+              - quay
+              - gcr
+              - custom
+          example: ghcr
+        - name: owner
+          in: path
+          required: true
+          description: Repository owner, organization, or namespace
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9][a-zA-Z0-9_-]*$'
+            minLength: 1
+            maxLength: 255
+          example: microsoft
+        - name: image
+          in: path
+          required: true
+          description: Image or repository name
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9][a-zA-Z0-9_.-/]*$'
+            minLength: 1
+            maxLength: 255
+          example: dotnet-samples
+        - name: customRegistryUrl
+          in: query
+          required: false
+          description: |
+            Custom registry base URL (required when registryType is 'custom').
+            Must be an OCI Distribution v2 compliant registry.
+          schema:
+            type: string
+            format: uri
+          example: docker.redpanda.com
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of tags to return per page (max 500)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+          example: 100
+        - name: last
+          in: query
+          required: false
+          description: Pagination cursor from previous response
+          schema:
+            type: string
+          example: v1.0.5
+      responses:
+        '200':
+          description: Tag list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagListResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Repository not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Image listing endpoint with custom registry support
+  /registries/{registryType}/{owner}/images:
+    get:
+      summary: List images for an owner on a specific registry
+      description: |
+        Returns available images for a given owner/organization on the specified registry.
+        Note: Custom registries typically don't support catalog listings (returns empty array).
+      operationId: listRegistryImages
+      tags:
+        - Images
+      parameters:
+        - name: registryType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - ghcr
+              - dockerhub
+              - quay
+              - gcr
+              - custom
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: customRegistryUrl
+          in: query
+          required: false
+          description: Custom registry base URL (required when registryType is 'custom')
+          schema:
+            type: string
+            format: uri
+      responses:
+        '200':
+          description: Image list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageListResponse'
+
+  # Custom registry detection endpoint
+  /registries/detect:
+    post:
+      summary: Detect and validate custom OCI registry
+      description: |
+        Validates a custom registry URL by probing the OCI Distribution v2 `/v2/` endpoint.
+        Returns success if the registry is OCI-compliant.
+      operationId: detectRegistry
+      tags:
+        - Registries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Base URL of the custom registry (e.g., docker.redpanda.com)
+                  example: docker.redpanda.com
+              required:
+                - url
+      responses:
+        '200':
+          description: Registry is OCI-compliant
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isValid:
+                    type: boolean
+                    example: true
+                  registryUrl:
+                    type: string
+                    example: https://docker.redpanda.com
+                  message:
+                    type: string
+                    example: Registry is OCI Distribution v2 compliant
+        '400':
+          description: Invalid URL or registry not OCI-compliant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidUrl:
+                  summary: Invalid URL format
+                  value:
+                    code: InvalidFormat
+                    message: Invalid registry URL format
+                notOciCompliant:
+                  summary: Registry not OCI-compliant
+                  value:
+                    code: UpstreamError
+                    message: Registry does not support OCI Distribution v2
+
+  # Health endpoint
+  /health:
+    get:
+      summary: Service health check
+      description: Returns the health status and uptime of the API service
+      operationId: health
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, degraded]
+                    example: ok
+                  uptimeSeconds:
+                    type: integer
+                    minimum: 0
+                    example: 3600
+                required:
+                  - status
+                  - uptimeSeconds
+
+components:
+  schemas:
+    TagListResponse:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+          description: List of tag names
+          example:
+            - latest
+            - v1.0.0
+        hasMore:
+          type: boolean
+          description: Indicates whether more pages are available
+          example: true
+      required:
+        - tags
+        - hasMore
+
+    ImageListResponse:
+      type: object
+      properties:
+        images:
+          type: array
+          items:
+            type: string
+          description: List of image names
+          example:
+            - redpanda
+            - console
+      required:
+        - images
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          enum:
+            - InvalidFormat
+            - NotFound
+            - UnsupportedRegistry
+            - RateLimited
+            - UpstreamError
+          example: NotFound
+        message:
+          type: string
+          example: Repository not found
+      required:
+        - code
+        - message
+
+    RegistryType:
+      type: string
+      enum:
+        - ghcr
+        - dockerhub
+        - quay
+        - gcr
+        - custom
+      description: |
+        Supported container registry types:
+        - `ghcr`: GitHub Container Registry
+        - `dockerhub`: Docker Hub
+        - `quay`: Quay.io
+        - `gcr`: Google Container Registry
+        - `custom`: Custom OCI-compliant registry
+      example: ghcr
+
+tags:
+  - name: Tags
+    description: Tag listing operations
+  - name: Images
+    description: Image listing operations
+  - name: Registries
+    description: Registry detection and validation
+  - name: Health
+    description: Service health monitoring

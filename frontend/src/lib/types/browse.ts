@@ -1,4 +1,4 @@
-export type RegistryType = 'GHCR' | 'DockerHub' | 'Quay' | 'GCR';
+export type RegistryType = 'GHCR' | 'DockerHub' | 'Quay' | 'GCR' | 'Custom';
 
 export interface ImageListing {
   owner: string;
@@ -25,6 +25,7 @@ export interface BrowseSession {
   sessionId: string;
   registryType: RegistryType;
   ownerOrProjectId: string;
+  customRegistryUrl?: string;
   authState: AuthState;
   images: ImageListing[];
   totalCount: number | null;
@@ -113,6 +114,19 @@ export interface GhcrBrowserService {
 
 export interface GcrBrowserService {
   validateProjectId(projectId: string): boolean;
+}
+
+export interface RegistryDetectionService {
+  detectRegistry(url: string): Promise<{
+    supported: boolean;
+    normalizedUrl: string | null;
+    apiVersion: string | null;
+    capabilities: {
+      catalog: boolean;
+      tagsList: boolean;
+    } | null;
+    errorMessage: string | null;
+  }>;
 }
 
 export interface GhcrAuthService {

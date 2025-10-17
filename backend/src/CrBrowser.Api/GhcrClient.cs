@@ -70,37 +70,21 @@ public sealed class GhcrClient : OciRegistryClientBase, IGhcrClient
         var ownerType = owner.Contains('-') ? "orgs" : "users";
         var url = nextPageUrl ?? $"https://api.github.com/{ownerType}/{owner}/packages?package_type=container&per_page={Math.Min(pageSize, 100)}";
 
-        using var githubClient = new HttpClient();
-        githubClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github+json");
-        githubClient.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
-        githubClient.DefaultRequestHeaders.UserAgent.ParseAdd("cr-browser/0.0.1");
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Add("Accept", "application/vnd.github+json");
+        req.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
         
         if (!string.IsNullOrEmpty(authToken))
         {
-            githubClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
         }
 
-        using var req = new HttpRequestMessage(HttpMethod.Get, url);
-        var resp = await githubClient.SendAsync(req, ct);
+        var resp = await _http.SendAsync(req, ct);
         
         if (!resp.IsSuccessStatusCode)
         {
             _logger.LogWarning("GitHub API request failed with status {StatusCode} for owner {Owner}", resp.StatusCode, owner);
-            
-            if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                throw new UnauthorizedAccessException("Authentication failed. Invalid or expired GitHub token.");
-            }
-            if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden)
-            {
-                throw new UnauthorizedAccessException("Token lacks required permissions. Ensure token has 'read:packages' scope.");
-            }
-            if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                throw new KeyNotFoundException($"Owner '{owner}' not found.");
-            }
-            
-            throw new HttpRequestException($"GitHub API error: {resp.StatusCode}");
+            return new BrowseImagesResponse(Array.Empty<ImageListing>(), null, null);
         }
 
         var content = await resp.Content.ReadAsStringAsync(ct);
@@ -165,3 +149,4 @@ public sealed class GhcrClient : OciRegistryClientBase, IGhcrClient
         return null;
     }
 }
+

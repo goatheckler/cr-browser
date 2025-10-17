@@ -40,6 +40,7 @@ Safe alternatives:
 - Use existing scripts/tools that don't require elevation
 
 ## Recent Changes
+- 005-custom-registry-ui-enhancement: Enhanced custom registry UX with visible URL validation workflow in main UI
 - 003-owner-image-browser: Added Frontend: TypeScript (SvelteKit, Node 20), Backend: C# (.NET 8) + SvelteKit, Tailwind CSS, ag-grid (community), existing System.Net.Http backend
 - 002-multi-registry-support: Added multi-registry support (Docker Hub, Quay.io, GCR) with OCI Distribution Specification compliance
 - 001: Added Backend C# (.NET 8), Frontend SvelteKit (Node 20) + HTTP client (System.Net.Http), JSON serialization (System.Text.Json), SvelteKit, Tailwind CSS, ag-grid (community), clipboard API
