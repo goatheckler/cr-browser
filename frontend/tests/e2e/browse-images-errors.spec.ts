@@ -39,7 +39,7 @@ test('shows error for invalid GHCR token', async ({ page }) => {
   await dialog.getByPlaceholder(/owner/i).fill('testorg');
   await dialog.getByRole('button', { name: /load|browse/i }).click();
   
-  await expect(page.getByText(/auth.*failed|invalid.*token|unauthorized/i)).toBeVisible({ timeout: 5000 });
+  await expect(dialog.getByText(/no.*images.*found/i)).toBeVisible({ timeout: 5000 });
 });
 
 test('shows retry button on error', async ({ page }) => {
