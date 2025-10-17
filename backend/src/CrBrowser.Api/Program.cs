@@ -11,6 +11,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 builder.Services.AddSingleton<IValidationService, ValidationService>();
+builder.Services.AddSingleton<IRegistryDetectionService, RegistryDetectionService>();
 
 // Bind registries configuration from appsettings.json
 var registriesConfig = new RegistriesConfiguration();
@@ -70,6 +71,18 @@ app.UseMiddleware<ErrorHandlingMiddleware>();
 // Placeholder health endpoint (now with uptimeSeconds to satisfy test expectation)
 app.MapGet("/api/health", () => Results.Json(new { status = "ok", uptimeSeconds = (int)(DateTime.UtcNow - startTime).TotalSeconds }));
 
+// Registry detection endpoint
+app.MapPost("/api/registries/detect", async (RegistryDetectionRequest request, IRegistryDetectionService detector, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Url))
+    {
+        return Results.Json(new ErrorResponse("InvalidUrl", "URL cannot be empty", false), statusCode: 400);
+    }
+
+    var result = await detector.DetectRegistryAsync(request.Url, ct);
+    return Results.Json(result);
+});
+
 // Serve static OpenAPI file from specs path under /api/openapi.yaml (temporary approach)
 var specPhysicalPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "specs", "001-ghcr-browser-is", "contracts", "openapi.yaml");
 app.MapGet("/api/openapi.yaml", () =>
@@ -89,6 +102,7 @@ app.MapGet("/api/registries/{registryType}/{owner}/images", async (
     string owner,
     int pageSize = 25,
     string? nextPageUrl = null,
+    string? customRegistryUrl = null,
     IValidationService validator = null!,
     IRegistryFactory factory = null!,
     HttpContext httpContext = null!,
@@ -104,7 +118,19 @@ app.MapGet("/api/registries/{registryType}/{owner}/images", async (
         return Results.Json(new ErrorResponse("InvalidPageSize", "PageSize must be between 1 and 100", false), statusCode: 400);
     }
 
-    var client = factory.CreateClient(type);
+    IContainerRegistryClient client;
+    if (type == RegistryType.Custom)
+    {
+        if (string.IsNullOrWhiteSpace(customRegistryUrl))
+        {
+            return Results.Json(new ErrorResponse("MissingCustomRegistryUrl", "customRegistryUrl is required for Custom registry type", false), statusCode: 400);
+        }
+        client = factory.CreateCustomClient(customRegistryUrl);
+    }
+    else
+    {
+        client = factory.CreateClient(type);
+    }
     
     string? authToken = null;
     if (httpContext.Request.Headers.TryGetValue("Authorization", out var authHeader))
@@ -116,14 +142,21 @@ app.MapGet("/api/registries/{registryType}/{owner}/images", async (
         }
     }
 
-    var result = await client.ListImagesAsync(owner, pageSize, authToken, nextPageUrl, ct);
-    
-    return Results.Json(new
+    try
     {
-        images = result.Images,
-        totalCount = result.TotalCount,
-        nextPageUrl = result.NextPageUrl
-    });
+        var result = await client.ListImagesAsync(owner, pageSize, authToken, nextPageUrl, ct);
+        
+        return Results.Json(new
+        {
+            images = result.Images,
+            totalCount = result.TotalCount,
+            nextPageUrl = result.NextPageUrl
+        });
+    }
+    catch (CatalogNotSupportedException ex)
+    {
+        return Results.Json(new ErrorResponse("CatalogNotSupported", ex.Message, false), statusCode: 501);
+    }
 });
 
 // New multi-registry endpoint
@@ -133,23 +166,21 @@ app.MapGet("/api/registries/{registryType}/{owner}/{image}/tags", async (
     string image, 
     int page = 1, 
     int pageSize = 10, 
+    string? customRegistryUrl = null,
     IValidationService validator = null!, 
     IRegistryFactory factory = null!, 
     CancellationToken ct = default) =>
 {
-    // Validate registry type
     if (!Enum.TryParse<RegistryType>(registryType, ignoreCase: true, out var type))
     {
         return Results.Json(new ErrorResponse("InvalidRegistryType", $"Invalid registry type: {registryType}", false), statusCode: 400);
     }
 
-    // Validate owner/image format
     if (!validator.TryParseReference(owner, image, out var reference, out var error))
     {
         return Results.Json(new ErrorResponse("InvalidFormat", error ?? "Invalid reference", false), statusCode: 400);
     }
 
-    // Validate page and pageSize
     if (page < 1)
     {
         return Results.Json(new ErrorResponse("InvalidPage", "Page must be >= 1", false), statusCode: 400);
@@ -159,10 +190,20 @@ app.MapGet("/api/registries/{registryType}/{owner}/{image}/tags", async (
         return Results.Json(new ErrorResponse("InvalidPageSize", "PageSize must be between 1 and 100", false), statusCode: 400);
     }
 
-    // Create appropriate client
-    var client = factory.CreateClient(type);
+    IContainerRegistryClient client;
+    if (type == RegistryType.Custom)
+    {
+        if (string.IsNullOrWhiteSpace(customRegistryUrl))
+        {
+            return Results.Json(new ErrorResponse("MissingCustomRegistryUrl", "customRegistryUrl is required for Custom registry type", false), statusCode: 400);
+        }
+        client = factory.CreateCustomClient(customRegistryUrl);
+    }
+    else
+    {
+        client = factory.CreateClient(type);
+    }
 
-    // Fetch all tags (same logic as legacy endpoint for now)
     var all = new List<string>();
     string? last = null;
     bool hasMore = true;

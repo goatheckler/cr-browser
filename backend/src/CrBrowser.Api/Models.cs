@@ -10,7 +10,8 @@ public enum RegistryType
     Ghcr,
     DockerHub,
     Quay,
-    Gcr
+    Gcr,
+    Custom
 }
 
 public record RegistryConfiguration(
@@ -76,6 +77,11 @@ public sealed class ValidationService : IValidationService
 
 public record ErrorResponse(string Code, string Message, bool Retryable);
 
+public sealed class CatalogNotSupportedException : Exception
+{
+    public CatalogNotSupportedException(string message) : base(message) { }
+}
+
 public record RegistryRequest(
     [Required] RegistryType RegistryType,
     [Required] [RegularExpression(@"^[a-z0-9](?:[a-z0-9-]{0,38})$")] string Owner,
@@ -109,4 +115,8 @@ public record BrowseImagesResponse(
     ImageListing[] Images,
     int? TotalCount,
     string? NextPageUrl
+);
+
+public record RegistryDetectionRequest(
+    [Required] string Url
 );

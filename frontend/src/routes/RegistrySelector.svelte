@@ -28,4 +28,5 @@
   <option value="dockerhub">Docker Hub</option>
   <option value="quay">Quay.io</option>
   <option value="gcr">Google Container Registry</option>
+  <option value="custom">Custom Registry</option>
 </select>

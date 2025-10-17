@@ -4,11 +4,13 @@ import * as dockerHubBrowser from './dockerHubBrowser';
 import * as quayBrowser from './quayBrowser';
 import * as ghcrBrowser from './ghcrBrowser';
 import * as gcrBrowser from './gcrBrowser';
+import * as customRegistryBrowser from './customRegistryBrowser';
 
 export async function loadImages(
   registryType: RegistryType,
   ownerOrProjectId: string,
   credential?: RegistryCredential,
+  customRegistryUrl?: string,
   pageSize: number = DEFAULT_PAGE_SIZE
 ): Promise<BrowseSession> {
   const sessionId = crypto.randomUUID();
@@ -17,6 +19,7 @@ export async function loadImages(
     sessionId,
     registryType,
     ownerOrProjectId,
+    customRegistryUrl,
     authState: credential 
       ? { type: 'authenticated', credential } 
       : { type: 'unauthenticated' },
@@ -76,6 +79,21 @@ export async function loadImages(
         break;
       }
 
+      case 'Custom': {
+        if (!customRegistryUrl) {
+          throw new Error('Custom registry URL is required');
+        }
+        const result = await customRegistryBrowser.listRepositories(
+          customRegistryUrl,
+          ownerOrProjectId,
+          pageSize
+        );
+        images = result.repositories;
+        totalCount = result.totalCount;
+        nextPageUrl = result.nextPageUrl;
+        break;
+      }
+
       default:
         throw new Error(`Unsupported registry type: ${registryType}`);
     }
@@ -100,7 +118,11 @@ export async function loadImages(
     let retryable = true;
     let displayMessage = errorMessage;
 
-    if (errorMessage.includes('not found') || errorMessage.includes('404')) {
+    if (errorName === 'CatalogNotSupportedError') {
+      errorCode = 'CATALOG_NOT_SUPPORTED';
+      retryable = false;
+      displayMessage = `${errorMessage}\n\nThis registry doesn't support browsing images. Please enter the image name directly to view its tags.`;
+    } else if (errorMessage.includes('not found') || errorMessage.includes('404')) {
       errorCode = ERROR_CODES.NOT_FOUND;
       retryable = false;
     } else if (errorMessage.includes('Authentication failed') || errorMessage.includes('401')) {
@@ -141,6 +163,32 @@ export async function loadNextPage(session: BrowseSession): Promise<BrowseSessio
         }
 
         const result = await dockerHubBrowser.listRepositories(
+          session.ownerOrProjectId,
+          session.pagination.pageSize,
+          session.pagination.nextPageUrl
+        );
+
+        return {
+          ...session,
+          images: [...session.images, ...result.repositories],
+          pagination: {
+            ...session.pagination,
+            currentPage: session.pagination.currentPage + 1,
+            hasMore: result.nextPageUrl !== null,
+            nextPageUrl: result.nextPageUrl
+          },
+          status: 'loaded',
+          error: null
+        };
+      }
+
+      case 'Custom': {
+        if (!session.pagination.nextPageUrl || !session.customRegistryUrl) {
+          return session;
+        }
+
+        const result = await customRegistryBrowser.listRepositories(
+          session.customRegistryUrl,
           session.ownerOrProjectId,
           session.pagination.pageSize,
           session.pagination.nextPageUrl

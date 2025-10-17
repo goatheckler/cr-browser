@@ -1,5 +1,40 @@
 # Changelog
 
+## [Unreleased]
+
+### Features
+
+* add custom OCI registry support with detection endpoint
+  - New `POST /api/registries/detect` endpoint validates custom registry URLs for OCI Distribution v2 compatibility
+  - `CustomOciRegistryClient` extends `OciRegistryClientBase` to support any OCI-compliant registry
+  - Frontend `CustomRegistryInput` component with URL validation and detection flow
+  - Query parameter `customRegistryUrl` added to `/api/registries/{type}/{owner}/images` and `/api/registries/{type}/{owner}/{image}/tags` endpoints
+  - Custom registry type doesn't support catalog listing (empty for `/images` endpoint)
+  - E2E tests cover detection dialog, URL validation, and error handling
+
+### Added
+
+* Registry URL display field for all registry types (built-in and custom)
+* Check button for custom registry validation in main UI
+* Conditional enabling/disabling of controls based on custom registry validation state
+* Validation modal for custom registries triggered from main UI
+* 18 new E2E tests for custom registry validation workflow
+* Tests for registry URL display, validation flow, URL changes, validation failures, and registry type switching
+
+### Changed
+
+* Custom registry validation now happens in main UI instead of browse modal
+* Owner and image fields are cleared when custom registry URL changes
+* Browse and search buttons disabled until custom registry is validated
+* Updated existing custom registry tests to match new validation-first workflow
+
+### Fixed
+
+* Registry URL display now correctly shows custom registry URL when selected
+* Custom registry modal pre-fills with URL from main page
+* URL field remains editable after validation to allow corrections
+* Validation state properly resets when custom registry URL is modified
+
 ## [1.1.3](https://github.com/goatheckler/ghcr-browser/compare/v1.1.2...v1.1.3) (2025-10-06)
 
 

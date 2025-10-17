@@ -60,14 +60,93 @@ public sealed class GhcrClient : OciRegistryClientBase, IGhcrClient
         return (response.Tags, response.NotFound, response.Retryable, response.HasMore);
     }
 
-    public override Task<BrowseImagesResponse> ListImagesAsync(
+    public async override Task<BrowseImagesResponse> ListImagesAsync(
         string owner,
         int pageSize,
         string? authToken = null,
         string? nextPageUrl = null,
         CancellationToken ct = default)
     {
-        return Task.FromResult(new BrowseImagesResponse(Array.Empty<ImageListing>(), 0, null));
+        var ownerType = owner.Contains('-') ? "orgs" : "users";
+        var url = nextPageUrl ?? $"https://api.github.com/{ownerType}/{owner}/packages?package_type=container&per_page={Math.Min(pageSize, 100)}";
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Add("Accept", "application/vnd.github+json");
+        req.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
+        
+        if (!string.IsNullOrEmpty(authToken))
+        {
+            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+        }
+
+        var resp = await _http.SendAsync(req, ct);
+        
+        if (!resp.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("GitHub API request failed with status {StatusCode} for owner {Owner}", resp.StatusCode, owner);
+            return new BrowseImagesResponse(Array.Empty<ImageListing>(), null, null);
+        }
+
+        var content = await resp.Content.ReadAsStringAsync(ct);
+        using var doc = JsonDocument.Parse(content);
+        
+        var images = new List<ImageListing>();
+        foreach (var pkg in doc.RootElement.EnumerateArray())
+        {
+            var name = pkg.GetProperty("name").GetString() ?? "";
+            var ownerLogin = pkg.TryGetProperty("owner", out var ownerProp) && 
+                           ownerProp.TryGetProperty("login", out var loginProp)
+                ? loginProp.GetString() ?? owner
+                : owner;
+            
+            var lastUpdated = pkg.TryGetProperty("updated_at", out var updated) 
+                ? DateTime.Parse(updated.GetString()!) 
+                : (DateTime?)null;
+            var createdAt = pkg.TryGetProperty("created_at", out var created) 
+                ? DateTime.Parse(created.GetString()!) 
+                : (DateTime?)null;
+            
+            var packageId = pkg.TryGetProperty("id", out var id) ? id.GetInt64() : (long?)null;
+            var visibility = pkg.TryGetProperty("visibility", out var vis) ? vis.GetString() : null;
+            var htmlUrl = pkg.TryGetProperty("html_url", out var html) ? html.GetString() : null;
+
+            images.Add(new ImageListing(
+                ownerLogin,
+                name,
+                RegistryType.Ghcr,
+                lastUpdated,
+                createdAt,
+                new ImageMetadata(
+                    PackageId: packageId,
+                    Visibility: visibility,
+                    HtmlUrl: htmlUrl
+                )
+            ));
+        }
+
+        var linkHeader = resp.Headers.TryGetValues("Link", out var links) ? links.FirstOrDefault() : null;
+        var next = ExtractNextPageUrl(linkHeader);
+
+        return new BrowseImagesResponse(images.ToArray(), images.Count, next);
+    }
+
+    private static string? ExtractNextPageUrl(string? linkHeader)
+    {
+        if (string.IsNullOrEmpty(linkHeader)) return null;
+        
+        var parts = linkHeader.Split(',');
+        foreach (var part in parts)
+        {
+            if (part.Contains("rel=\"next\""))
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(part, "<(.+?)>");
+                if (match.Success)
+                {
+                    return match.Groups[1].Value;
+                }
+            }
+        }
+        return null;
     }
 }
 

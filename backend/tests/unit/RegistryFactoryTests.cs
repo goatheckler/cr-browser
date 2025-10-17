@@ -39,6 +39,11 @@ public class RegistryFactoryTests
         {
             return _supportedTypes.Contains(registryType);
         }
+
+        public CrBrowser.Api.IContainerRegistryClient CreateCustomClient(string baseUrl)
+        {
+            return new MockGhcrClient();
+        }
     }
 
     private class MockGhcrClient : CrBrowser.Api.IContainerRegistryClient
