@@ -97,17 +97,31 @@ public class CustomOciRegistryClientTests
     }
 
     [Fact]
-    public async Task ListImagesAsync_Should_Return_Empty_Response()
+    public async Task ListImagesAsync_Should_Throw_CatalogNotSupportedException_When_Catalog_Endpoint_Not_Found()
     {
         var baseUrl = "https://docker.redpanda.com";
-        var httpClient = new HttpClient();
+        var handlerMock = new Mock<HttpMessageHandler>();
+        
+        handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/v2/_catalog")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.NotFound
+            });
+
+        var httpClient = new HttpClient(handlerMock.Object);
+        httpClient.BaseAddress = new Uri(baseUrl);
+
         var client = new CrBrowser.Api.CustomOciRegistryClient(baseUrl, httpClient, _logger.Object);
 
-        var result = await client.ListImagesAsync("owner", 25, null, null, CancellationToken.None);
+        var exception = await Assert.ThrowsAsync<CrBrowser.Api.CatalogNotSupportedException>(
+            () => client.ListImagesAsync("owner", 25, null, null, CancellationToken.None)
+        );
 
-        Assert.NotNull(result);
-        Assert.Empty(result.Images);
-        Assert.Null(result.TotalCount);
-        Assert.Null(result.NextPageUrl);
+        Assert.Contains("does not support the OCI catalog API", exception.Message);
     }
 }
