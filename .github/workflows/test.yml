@@ -48,7 +48,7 @@ jobs:
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19.5'
+          node-version: '20.19.6'
         env:
           NODE_INSTALL_DIR: ${{ runner.temp }}/node
       
@@ -85,7 +85,7 @@ jobs:
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19.5'
+          node-version: '20.19.6'
         env:
           NODE_INSTALL_DIR: ${{ runner.temp }}/node
       
