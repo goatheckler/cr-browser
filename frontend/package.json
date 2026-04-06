@@ -22,7 +22,7 @@
     "svelte-check": "^4.4.6",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
-    "vite": "6.4.1"
+    "vite": "6.4.2"
   },
   "dependencies": {
     "ag-grid-community": "^30.2.1"
