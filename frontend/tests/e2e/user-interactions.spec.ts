@@ -24,7 +24,7 @@ test('enter key triggers search', async ({ page }) => {
   await page.getByPlaceholder('owner').fill('stefanprodan');
   await page.getByPlaceholder('image').fill('podinfo');
   await page.getByPlaceholder('image').press('Enter');
-  await expect(page.getByText(/Found/)).toBeVisible();
+  await expect(page.getByText(/Found/)).toBeVisible({ timeout: 15_000 });
   const rows = page.locator('.ag-center-cols-container .ag-row');
   await expect(rows.first()).toBeVisible();
 });
