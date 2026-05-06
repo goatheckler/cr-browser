@@ -54,13 +54,13 @@ echo "[frontend] Starting dev server" >&2
 (cd "$FRONTEND_DIR" && npm run dev) &
 FRONTEND_PID=$!
 
-for i in {1..30}; do
-  if curl -sf http://localhost:${PORT_FRONTEND} >/dev/null; then
+for i in {1..60}; do
+  if curl -sf http://localhost:${PORT_FRONTEND}/api/health >/dev/null 2>&1; then
     echo "[frontend] Ready" >&2
     break
   fi
   sleep 1
-  if [[ $i -eq 30 ]]; then
+  if [[ $i -eq 60 ]]; then
     echo "Frontend failed to start" >&2
     exit 1
   fi
