@@ -10,7 +10,7 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # --- Runtime stage ---
-FROM nginx:1.31-alpine@sha256:f105e3f12187c58ddc3acd09bbe4b9e4a9ab1df855d3d0e511b641077b5e988e AS runtime
+FROM nginx:1.31-alpine@sha256:dc48b7a872a79fb541ba5081d320b11b549231bc63ba465a7495afaa7d2ebcb8 AS runtime
 COPY --from=build /app/nginx.conf /etc/nginx/conf.d/default.conf
 # Copy SvelteKit static output (adapter-static emits into build/ by default)
 COPY --from=build /app/build /usr/share/nginx/html
