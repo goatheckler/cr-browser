@@ -1,12 +1,12 @@
 # Backend Dockerfile
-FROM mcr.microsoft.com/dotnet/sdk:8.0@sha256:fc69dc5e0c9789adaac5c8efce71ead4d016a51318667c4f26ce93574b1b9403 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0@sha256:c0761ac934d599d5be35e5d237aba6b08f47032a492c765e5ffa8d4bfc851e79 AS build
 WORKDIR /src
 COPY backend/src/CrBrowser.Api/CrBrowser.Api.csproj backend/src/CrBrowser.Api/
 RUN dotnet restore backend/src/CrBrowser.Api/CrBrowser.Api.csproj
 COPY backend/ ./backend/
 RUN dotnet publish backend/src/CrBrowser.Api/CrBrowser.Api.csproj -c Release -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0@sha256:19be23fe71e885186495d8da1f2d417e553daaa99e16e5148c5ca3ee2f062512 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0@sha256:0d39437fd3b598b2fd91f4d27118948b6ca1694ab90f90fef256504f822528fc AS final
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app/publish .
