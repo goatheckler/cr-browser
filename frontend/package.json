@@ -16,10 +16,10 @@
     "@sveltejs/kit": "^2.69.3",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
     "@types/node": "^20.19.43",
-    "autoprefixer": "^10.5.2",
+    "autoprefixer": "^10.5.3",
     "postcss": "^8.5.19",
-    "svelte": "5.56.4",
-    "svelte-check": "^4.7.2",
+    "svelte": "5.56.5",
+    "svelte-check": "^4.7.3",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
     "vite": "6.4.3"
