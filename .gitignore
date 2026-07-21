@@ -425,3 +425,9 @@ frontend/node_modules/
 playwright-report/
 frontend/playwright-report/
 frontend/test-results/
+.pnp.*
+.yarn/*
+playwright-results/
+test-results/
+.DS_Store
+node_modules/

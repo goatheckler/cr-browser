@@ -39,7 +39,8 @@ test('shows error for invalid GHCR token', async ({ page }) => {
   await dialog.getByPlaceholder(/owner/i).fill('testorg');
   await dialog.getByRole('button', { name: /load|browse/i }).click();
   
-  await expect(dialog.getByText(/no.*images.*found/i)).toBeVisible({ timeout: 5000 });
+  // Invalid token may result in an API error (e.g. 502 from upstream) or empty results
+  await expect(dialog.getByText(/no.*images.*found|error|failed/i)).toBeVisible({ timeout: 5000 });
 });
 
 test('shows retry button on error', async ({ page }) => {
