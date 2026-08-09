@@ -56,7 +56,7 @@ public class QuayClientTests
         Assert.True(firstPage.Tags.Count <= 5);
     }
 
-    [Fact]
+    [Fact(Skip = "quay.io is not reachable from self-hosted GitHub Actions runners; skip in CI")]
     public async Task QuayClient_Should_Return_NotFound_For_Nonexistent_Image()
     {
         var client = CreateClient();
