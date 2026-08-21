@@ -4,6 +4,12 @@ namespace CrBrowser.Api;
 
 public sealed class DockerHubClient : OciRegistryClientBase
 {
+    private readonly SemaphoreSlim _tokenLock = new(1, 1);
+
+    private string? _repository;
+    private string? _token;
+    private DateTimeOffset _tokenExpiresAt;
+
     public override RegistryType RegistryType => RegistryType.DockerHub;
     public override string BaseUrl => "https://registry-1.docker.io";
 
@@ -15,34 +21,57 @@ public sealed class DockerHubClient : OciRegistryClientBase
 
     protected override async Task<string?> AcquireTokenAsync(string repository, CancellationToken ct)
     {
-        var authUrl = $"https://auth.docker.io/token?service=registry.docker.io&scope=repository:{repository}:pull";
-        
-        using var authClient = new HttpClient();
-        authClient.DefaultRequestHeaders.UserAgent.ParseAdd("cr-browser/0.0.1");
-        
-        using var req = new HttpRequestMessage(HttpMethod.Get, authUrl);
-        var resp = await authClient.SendAsync(req, ct);
-        
-        if (!resp.IsSuccessStatusCode)
-        {
-            _logger.LogWarning("Docker Hub token request failed with status {StatusCode} for {Repository}", resp.StatusCode, repository);
-            return null;
-        }
-        
+        // Docker Hub tokens are scoped to a single repository; cache per repository
+        // (and reuse the shared HttpClient) so paginating tags doesn't re-fetch a
+        // token for every page - each page previously cost 3 serial round trips.
+        await _tokenLock.WaitAsync(ct);
         try
         {
-            using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct));
-            if (doc.RootElement.TryGetProperty("token", out var t))
-                return t.GetString();
+            if (_repository == repository
+                && _token != null
+                && DateTimeOffset.UtcNow < _tokenExpiresAt)
+            {
+                return _token;
+            }
+
+            var authUrl = $"https://auth.docker.io/token?service=registry.docker.io&scope=repository:{repository}:pull";
             
-            _logger.LogWarning("Docker Hub token response missing 'token' property for {Repository}", repository);
+            using var req = new HttpRequestMessage(HttpMethod.Get, authUrl);
+            var resp = await _http.SendAsync(req, ct);
+            
+            if (!resp.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Docker Hub token request failed with status {StatusCode} for {Repository}", resp.StatusCode, repository);
+                return null;
+            }
+            
+            try
+            {
+                using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct));
+                if (doc.RootElement.TryGetProperty("token", out var t))
+                {
+                    _token = t.GetString();
+                    _repository = repository;
+                    _tokenExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5); // default TTL when 'expires_in' absent
+                    if (doc.RootElement.TryGetProperty("expires_in", out var exp) && exp.TryGetInt32(out var expiresIn) && expiresIn > 0)
+                        _tokenExpiresAt = DateTimeOffset.UtcNow.AddSeconds(expiresIn);
+
+                    return _token;
+                }
+                
+                _logger.LogWarning("Docker Hub token response missing 'token' property for {Repository}", repository);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to parse Docker Hub token response for {Repository}", repository);
+            }
+            
+            return null;
         }
-        catch (Exception ex)
+        finally
         {
-            _logger.LogError(ex, "Failed to parse Docker Hub token response for {Repository}", repository);
+            _tokenLock.Release();
         }
-        
-        return null;
     }
 
     protected override string FormatRepositoryPath(string owner, string image)
