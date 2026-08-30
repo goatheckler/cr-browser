@@ -159,7 +159,7 @@ public sealed class CustomOciRegistryClient : OciRegistryClientBase
 
         try
         {
-            using var tokenClient = new HttpClient();
+            using var tokenClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
             using var tokenReq = new HttpRequestMessage(HttpMethod.Get, tokenUrl);
             using var tokenResp = await tokenClient.SendAsync(tokenReq, ct);
 
