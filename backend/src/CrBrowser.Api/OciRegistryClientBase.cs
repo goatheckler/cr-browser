@@ -134,7 +134,16 @@ public abstract class OciRegistryClientBase : IContainerRegistryClient
         if (!string.IsNullOrWhiteSpace(bearer))
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
 
-        var resp = await _http.SendAsync(req, ct);
+        HttpResponseMessage resp;
+        try
+        {
+            resp = await _http.SendAsync(req, ct);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex, "Network error requesting {Url}", relativeUrl);
+            return (null, true, false);
+        }
         
         _logger.LogInformation("HTTP {Method} {Url} -> {StatusCode}", req.Method, relativeUrl, (int)resp.StatusCode);
         
