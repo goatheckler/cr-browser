@@ -1,7 +1,7 @@
 # Frontend production Dockerfile (static build served by nginx)
 
 # --- Build stage ---
-FROM node:22.23.2-alpine@sha256:b6f26b36c8ff49624cfdac716b8ea1138d606df02586a77d364bb5536a634f85 AS build
+FROM node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS build
 WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm install
