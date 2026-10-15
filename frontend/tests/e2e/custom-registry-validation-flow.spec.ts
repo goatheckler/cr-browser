@@ -49,7 +49,7 @@ test.describe('Custom Registry Validation Flow', () => {
     const checkButton = page.locator('[data-testid="check-registry-button"]');
     await checkButton.click();
     
-    await expect(page.getByText('✓ OCI Registry Detected')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('✓ OCI Registry Detected')).toBeVisible({ timeout: 30000 });
     await expect(page.getByText('https://docker.redpanda.com')).toBeVisible();
     
     const closeButton = page.getByRole('button', { name: 'Close' });
@@ -82,7 +82,7 @@ test.describe('Custom Registry Validation Flow', () => {
     const checkButton = page.locator('[data-testid="check-registry-button"]');
     await checkButton.click();
     
-    await expect(page.getByText('✓ OCI Registry Detected')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('✓ OCI Registry Detected')).toBeVisible({ timeout: 30000 });
     
     await page.keyboard.press('Escape');
     

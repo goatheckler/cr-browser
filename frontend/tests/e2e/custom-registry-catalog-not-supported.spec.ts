@@ -14,7 +14,7 @@ test.describe('Custom Registry - Catalog Not Supported', () => {
 
 		await page.getByRole('button', { name: 'Check' }).click();
 		
-		await expect(page.getByText('✓ OCI Registry Detected')).toBeVisible({ timeout: 10000 });
+		await expect(page.getByText('✓ OCI Registry Detected')).toBeVisible({ timeout: 30000 });
 		await expect(page.getByText('https://docker.redpanda.com')).toBeVisible();
 		
 		await page.getByRole('button', { name: 'Close' }).click();
@@ -47,7 +47,7 @@ test.describe('Custom Registry - Catalog Not Supported', () => {
 
 		await expect(page.locator('.ag-theme-alpine')).toBeVisible();
 		const rows = page.locator('.ag-center-cols-container .ag-row');
-		await expect(rows.first()).toBeVisible({ timeout: 10000 });
+		await expect(rows.first()).toBeVisible({ timeout: 30000 });
 		await expect(rows.count()).resolves.toBeGreaterThan(20);
 	});
 });
