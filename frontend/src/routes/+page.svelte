@@ -119,11 +119,18 @@
       return;
     }
     
+    const requestedUrl = customRegistryUrl;
     detectingRegistry = true;
     detectionResult = null;
     
     try {
-      const result = await registryDetectionService.detectRegistry(customRegistryUrl);
+      const result = await registryDetectionService.detectRegistry(requestedUrl);
+      
+      // Discard stale responses: the registry selection or URL changed while
+      // detection was in flight, so validation state must not be revived.
+      if (registry !== 'custom' || customRegistryUrl !== requestedUrl) {
+        return;
+      }
       
       if (result.supported && result.normalizedUrl) {
         detectionResult = {
