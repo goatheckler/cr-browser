@@ -25,6 +25,7 @@
   } | null>(null);
   let showDetectionResult = $state(false);
   let detectingRegistry = $state(false);
+  let registryCheckRequestId = 0;
   let tags = $state<string[]>([]);
   let copied = $state<string | null>(null);
   let copyTimer = $state<ReturnType<typeof setTimeout> | null>(null);
@@ -122,8 +123,18 @@
     detectingRegistry = true;
     detectionResult = null;
     
+    const requestedUrl = customRegistryUrl;
+    const requestId = ++registryCheckRequestId;
+    
     try {
-      const result = await registryDetectionService.detectRegistry(customRegistryUrl);
+      const result = await registryDetectionService.detectRegistry(requestedUrl);
+      
+      // Discard stale responses: if the registry type changed or the URL was
+      // edited while the request was in flight, applying the result would
+      // wrongly re-enable Browse Images for the new (unvalidated) state.
+      if (requestId !== registryCheckRequestId || registry !== 'custom' || customRegistryUrl !== requestedUrl) {
+        return;
+      }
       
       if (result.supported && result.normalizedUrl) {
         detectionResult = {
@@ -142,6 +153,9 @@
       }
       showDetectionResult = true;
     } catch (err) {
+      if (requestId !== registryCheckRequestId || registry !== 'custom' || customRegistryUrl !== requestedUrl) {
+        return;
+      }
       detectionResult = {
         normalizedUrl: customRegistryUrl,
         apiVersion: null,
@@ -150,7 +164,9 @@
       customRegistryValidated = false;
       showDetectionResult = true;
     } finally {
-      detectingRegistry = false;
+      if (requestId === registryCheckRequestId) {
+        detectingRegistry = false;
+      }
     }
   }
 
